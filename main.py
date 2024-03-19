@@ -273,10 +273,31 @@ def main():
             function_name = tool_call.function.name
             function_to_call = available_functions[function_name]
             function_args = json.loads(tool_call.function.arguments)
-            function_response = function_to_call(
-                location=function_args.get("location"),
-                unit=function_args.get("unit"),
-            )
+            match tool_call.function.name:
+                case "searchWeb":
+                    function_response = function_to_call(
+                        q = function_args.get("query"),
+                        website = function_args.get("website"),
+                        n = function_args.get("numResults")
+                    )
+                case "getFounder":
+                    function_response = function_to_call(
+                        company = function_args.get("company")
+                    )
+                case "getFunding":
+                    function_response = function_to_call(
+                        company = function_args.get("company")
+                    )
+                case "rank":
+                    function_response = function_to_call(
+                        companies = function_args.get("companies")
+                        n = 10
+                    )
+                case "output":
+                    function_response = function_to_call(
+                        company = function_args.get("company")
+                    )
+            
             messages.append(
                 {
                     "tool_call_id": tool_call.id,
@@ -285,6 +306,11 @@ def main():
                     "content": function_response,
                 }
             )  
+<<<<<<< HEAD
         # extend conversation with function response
+=======
+
+            #so far there is only 1 message sent, we need to send more messages once we have executed the functions
+>>>>>>> beb761ff934a83c5bc9f814ee4326c35fb6a480a
 
 main()
