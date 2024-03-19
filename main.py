@@ -16,7 +16,7 @@ client = OpenAI()
 # Function to search crunchbase for results related to a query
 # The query can consist of categories 
 # Returns a dataframe containing the companies found
-def searchCrunchbase(categories, n=1000):
+def searchCrunchbaseCompanies(categories, n=1000):
     queryJSON = {
         "field_ids": [
             "identifier",
@@ -43,7 +43,7 @@ def searchCrunchbase(categories, n=1000):
                 "type": "predicate",
                 "field_id": "categories",
                 "operator_id": "includes",
-                "values": ["artificial-intelligence"]
+                "values": categories
             },
             {
                 "type": "predicate",
@@ -111,7 +111,7 @@ def searchCrunchbase(categories, n=1000):
     master["revenue"] = raw["properties.revenue_range"].map(revenue_range)
     master["website"] = raw["properties.website_url"]
     master["location"] = raw["properties.location_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
-    #master["funding"] = raw["properties.funding_total"]
+    master["funding"] = raw["properties.funding_total"]
     master["funding_stage"] = raw["properties.funding_stage"]
     master["founders"] = raw["properties.founder_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
     master["investors"] = raw["properties.investor_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
@@ -123,14 +123,8 @@ def searchCrunchbase(categories, n=1000):
     master["status"] = raw["properties.operating_status"]
     master=master.fillna("NA")
 
-    print(master.to_string())
-
-
-
-
-
-
-
+    #print(master.to_string())
+    return master
 
 # Function to search github for results related to a query
 # q is a carefully formatted query
@@ -177,7 +171,7 @@ def main():
                  "content": 
                     """
                     You are a helpful assistant that takes an input query which is a description of a company. 
-                    Your job is to search GitHub, Crunchbase, and the web to find the 100 most relevant companies to the query. 
+                    Your job is to search GitHub, Crunchbase, and the web to find the 1000 most relevant companies to the query. 
                     Then for each company, you will get the founder along with a description of their professional and educational background. 
                     You will also get the level of funding and where it is coming from. 
                     Then, you will use this information to rank the top 10 best companies based on the similarity of the query, 
@@ -194,66 +188,58 @@ def main():
                     Q: Tell me the top 10 blockchain investment companies 
                     A: 
                     Thought 1: I need to search GitHub to find the top 100 blockchain investment companies 
-                    Act 1: searchWeb({"query": "blockchain investment companies", "website": "github.com", "numResults": 100}) 
+                    Act 1: searchGitHub({"query": "blockchain investment companies", "n": 1000}) 
                     Observation 1: I now have the top 100 blockchain investment companies on GitHub
 
                     Thought 2: I need to search Crunchbase to find the top 100 blockchain investment companies 
-                    Act 2: searchWeb({"query": "blockchain investment companies", "website": "crunchbase.com", "numResults": 100}) 
+                    Act 2: searchCrunchbaseCompanies({"categories": "["blockchain", "investment"]"}) 
                     Observation 2: I now have the top 100 blockchain investment companies on crunchbase
 
-                    Thought 3: I need to search the web to find the top 100 blockchain investment companies 
-                    Act 3: searchWeb({"query": "blockchain investment companies", "website": "", "numResults": 100}) 
-                    Observation 3: I now have the top 100 blockchain investment companies on the web
+                    Thought 3: I need to choose the most relevant companies from my previous searches that relate to the initial query 
+                    Act 3: Remove the companies that are least relevant to the prompt, so I only have 50 left 
+                    Observation 3: I have the top 50 blockchain investment companies
 
-                    Thought 4: I need to choose the most relevant companies from my previous searches that relate to the initial query 
-                    Act 4: Remove the companies that are least relevant to the prompt, so I only have 50 left 
-                    Observation 4: I have the top 50 blockchain investment companies
-
-                    Thought 5: I need to find the funding and founder for each of the top 50 companies 
-                    Act 5: getFunding({"company": "company1"}), getFounder({"company": "company1"}), 
+                    Thought 4: I need to find the funding and founder for each of the top 50 companies 
+                    Act 4: getFunding({"company": "company1"}), getFounder({"company": "company1"}), 
                            getFunding("company": "company2"}), getFounder("company": "company2"}), ... 
                            getFunding({"company": "company50"}), getFounder({"company": "company50"}) 
-                    Observation 5: I now have all of the information necessary to rank the top 50 companies
+                    Observation 4: I now have all of the information necessary to rank the top 50 companies
 
-                    Thought 6: I need to rank the top 10 companies 
-                    Act 6: rank([{"company": "company1"}, ... {"company": "company50"}]) 
-                    Observation 6: I now have the top 10 ranked companies for the query
+                    Thought 5: I need to rank the top 10 companies 
+                    Act 5: rank([{"company": "company1"}, ... {"company": "company50"}]) 
+                    Observation 5: I now have the top 10 ranked companies for the query
 
-                    Thought 7: I need to output the information for each of the top 10 companies 
-                    Act 7: outputCompany({"company": "company1}), ... outputCompany({"company": "company10"}) 
-                    Observation 7: I have finished
+                    Thought 6: I need to output the information for each of the top 10 companies 
+                    Act 6: outputCompany({"company": "company1}), ... outputCompany({"company": "company10"}) 
+                    Observation 6: I have finished
 
                     Q: Find me the best indie game development companies 
                     A: 
                     Thought 1: I need to search GitHub to find the top 100 best indie game development companies 
-                    Act 1: searchWeb({"query": "best indie game development companies", "website": "github.com", "numResults": 100}) 
+                    Act 1: searchGitHub({"query": "best indie game development companies", "numResults": 100}) 
                     Observation 1: I now have the top 100 best indie game development companies on GitHub
 
                     Thought 2: I need to search Crunchbase to find the top 100 indie game development companies 
-                    Act 2: searchWeb({"query": "indie game development companies", "website": "crunchbase.com", "numResults": 100}) 
+                    Act 2: searchCrunchbaseCompanies({"categories": "["game development"]"}) 
                     Observation 2: I now have the top 100 best indie game development companies on crunchbase
 
-                    Thought 3: I need to search the web to find the top 100 best indie game development companies 
-                    Act 3: searchWeb({"query": "best indie game development companies", "website": "", "numResults": 100}) 
-                    Observation 3: I now have the top 100 best indie game development companies on the web
+                    Thought 3: I need to choose the most relevant companies from my previous searches that relate to the initial query 
+                    Act 3: Remove the companies that are least relevant to the prompt, so I only have 50 left 
+                    Observation 3: I have the top 50 indie game development companies
 
-                    Thought 4: I need to choose the most relevant companies from my previous searches that relate to the initial query 
-                    Act 4: Remove the companies that are least relevant to the prompt, so I only have 50 left 
-                    Observation 4: I have the top 50 indie game development companies
-
-                    Thought 5: I need to find the funding and founder for each of the top 50 companies 
-                    Act 5: getFunding({"company": "company1"}), getFounder({"company": "company1"}), 
+                    Thought 4: I need to find the funding and founder for each of the top 50 companies 
+                    Act 4: getFunding({"company": "company1"}), getFounder({"company": "company1"}), 
                            getFunding("company": "company2"}), getFounder("company": "company2"}), ... 
                            getFunding({"company": "company50"}), getFounder({"company": "company50"}) 
-                    Observation 5: I now have all of the information necessary to rank the top 50 companies
+                    Observation 4: I now have all of the information necessary to rank the top 50 companies
 
-                    Thought 6: I need to rank the top 10 companies 
-                    Act 6: rank([{"company": "company1"}, ... {"company": "company50"}]) 
-                    Observation 6: I now have the top 10 ranked companies for the query
+                    Thought 5: I need to rank the top 10 companies 
+                    Act 5: rank([{"company": "company1"}, ... {"company": "company50"}]) 
+                    Observation 5: I now have the top 10 ranked companies for the query
 
-                    Thought 7: I need to output the information for each of the top 10 companies 
-                    Act 7: outputCompany({"company": "company1}), ... outputCompany({"company": "company10"}) 
-                    Observation 7: I have finished
+                    Thought 6: I need to output the information for each of the top 10 companies 
+                    Act 6: outputCompany({"company": "company1}), ... outputCompany({"company": "company10"}) 
+                    Observation 6: I have finished
 
                     Q: 
                     """ + query
@@ -288,22 +274,25 @@ def main():
         {
             "type": "function",
             "function": {
-                "name": "searchCrunchbase",
-                "description": "Search a query on crunchbase",
+                "name": "searchCrunchbaseCompanies",
+                "description": "Search for companies in certain categories on crunchbase",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "query to be searched"
+                        "categories": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                            },
+                            "description": "a list of crunchbase categories to be searched"
                         },
-                        "numResults": {
+                        "n": {
                             "type": "number",
-                            "description": "number of results for search to return. default is 100"
+                            "description": "number of results for search to return. default is 1000"
                         }
                     },
                     "required": [
-                        "query"
+                        "categories"
                     ]
                 }
             }
@@ -414,8 +403,8 @@ def main():
                         n = function_args.get("n")
                     )
                 case "searchCrunchbase":
-                    function_response = searchCrunchbase(
-                        query = function_args.get("query"),
+                    function_response = searchCrunchbaseCompanies(
+                        categories = function_args.get("categories"),
                         n = function_args.get("n")
                     )
                 case "getFounder":
@@ -447,5 +436,4 @@ def main():
         
 
 
-#main()
-searchCrunchbase(["AI"])
+main()
