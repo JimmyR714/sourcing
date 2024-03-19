@@ -3,6 +3,12 @@ import json
 import requests
 import pandas as pd
 from operator import itemgetter
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+CB_API_KEY = os.getenv("CB_API_KEY")
 
 MAX_FUNDING = 10000000
 client = OpenAI()
@@ -28,7 +34,7 @@ def searchCrunchbase(categories, n=1000):
             "rank_delta_d30",
             "rank_delta_d90",
             "rank_org",
-            "location",
+            "location_identifiers",
             "operating_status"
         ],
         "limit": n,
@@ -37,11 +43,11 @@ def searchCrunchbase(categories, n=1000):
                 "type": "predicate",
                 "field_id": "categories",
                 "operator_id": "includes",
-                "values": categories
+                "values": ["artificial-intelligence"]
             },
             {
                 "type": "predicate",
-                "field_id": "facet_id",
+                "field_id": "facet_ids",
                 "operator_id": "includes",
                 "values": ["company"]
             },
@@ -66,11 +72,14 @@ def searchCrunchbase(categories, n=1000):
         ]
     }
 
-    r = requests.post("https://api.crunchbase.com/api/v4/searches/organizations", params = CB_API_KEY, json = queryJSON)
+    url = "https://api.crunchbase.com/api/v4/searches/organizations?user_key="+CB_API_KEY
+    headers = {"accept": "application/json"}
+
+    r = requests.post(url=url, headers=headers, json=queryJSON)
     result = json.loads(r.text) #JSON containing all companies from this query
 
     #clean the data
-    raw = result["entities"]
+    raw = pd.json_normalize(result["entities"])
 
     revenue_range = {
     "r_00000000": "Less than $1M",
@@ -102,10 +111,10 @@ def searchCrunchbase(categories, n=1000):
     master["revenue"] = raw["properties.revenue_range"].map(revenue_range)
     master["website"] = raw["properties.website_url"]
     master["location"] = raw["properties.location_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
-    master["funding"] = raw["properties.funding_total"]
+    #master["funding"] = raw["properties.funding_total"]
     master["funding_stage"] = raw["properties.funding_stage"]
-    master["founders"] = raw["properties.founder_identifiers"]
-    master["investors"] = raw["properties.investor_identifiers"]
+    master["founders"] = raw["properties.founder_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
+    master["investors"] = raw["properties.investor_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
     master["num_of_investors"] = raw["properties.num_investors"]
     master["rank_change_week"] = raw["properties.rank_delta_d7"]
     master["rank_change_month"] = raw["properties.rank_delta_d30"]
@@ -439,4 +448,4 @@ def main():
 
 
 #main()
-searchCrunchbase(["AI Agent framework", "AI agent developer tool", "AI"])
+searchCrunchbase(["AI"])
