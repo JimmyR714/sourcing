@@ -1,12 +1,9 @@
 from openai import OpenAI
 from serpapi import GoogleSearch
 import json
-SERP_API_KEY = "c1a6aadd8345bc0a544ed5904f624bc74b25ef5f527ff8a46178b469a0a6d038"
+SERP_API_KEY = ""
 
 client = OpenAI()
-
-# Function to format the initial query to be more appropriate for searching each platform
-# Returns a JSON of 
 
 # Function to search a website for results related to a query
 # q is a carefully formatted query
@@ -131,8 +128,8 @@ def main():
                     Act 7: outputCompany({"company": "company1}), ... outputCompany({"company": "company10"}) 
                     Observation 7: I have finished
 
-                    Q: Find all AI agent framework and AI agent developer tool startups
-                    """
+                    Q: 
+                    """ + query
                 }
             ]
     
@@ -270,6 +267,7 @@ def main():
             "output": output
         } 
         messages.append(response)  #extend conversation with assistant's reply
+
         # for each function call, we run the function
         for tool_call in tool_calls:
             function_name = tool_call.function.name
@@ -286,6 +284,7 @@ def main():
                     "name": function_name,
                     "content": function_response,
                 }
-            )  # extend conversation with function response
+            )  
+        # extend conversation with function response
 
 main()
