@@ -1,31 +1,20 @@
 from openai import OpenAI
-from serpapi import GoogleSearch
 import json
-SERP_API_KEY = ""
+
 
 client = OpenAI()
 
-# Function to search a website for results related to a query
+# Function to search crunchbase for results related to a query
 # q is a carefully formatted query
-# Returns a list of length n containing companies that match the query q
-def searchWeb(q, website = "", n=100):
-    if website != "": #if there is a specific website that we want to search for
-        searchQuery = "site:" + website + q
-    else: #if we want to search more generally
-        searchQuery = q
+# Returns a list of length n containing companies that match the query
+def searchCrunchbase(query, n=100):
+    pass
 
-    #search the query
-    params = {
-        "api_key": SERP_API_KEY,
-        "engine": "google",
-        "q": searchQuery,
-        "google_domain": "google.com",
-        "hl": "en",
-        "num": n
-    }
-
-    search = GoogleSearch(params)
-    results = search.get_dict()
+# Function to search github for results related to a query
+# q is a carefully formatted query
+# Returns a list of length n containing companies that match the query
+def searchGithub(query, n=100):
+    pass
 
 def getFounder(company):
     pass
@@ -138,8 +127,8 @@ def main():
         {
             "type": "function",
             "function": {
-                "name": "searchWeb",
-                "description": "Search a query on the web on a particular website ",
+                "name": "searchGithub",
+                "description": "Search a query on github",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -147,14 +136,28 @@ def main():
                             "type": "string",
                             "description": "query to be searched"
                         },
-                        "website": {
+                        "numResults": {
+                            "type": "number",
+                            "description": "number of results for search to return. default is 100"
+                        }
+                    },
+                    "required": [
+                        "query"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "searchCrunchbase",
+                "description": "Search a query on crunchbase",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
                             "type": "string",
-                            "description": "website to be searched. leave blank if we want all websites",
-                            "enum": [
-                                "github.com",
-                                "crunchbase.com",
-                            ""
-                            ]
+                            "description": "query to be searched"
                         },
                         "numResults": {
                             "type": "number",
@@ -273,31 +276,10 @@ def main():
             function_name = tool_call.function.name
             function_to_call = available_functions[function_name]
             function_args = json.loads(tool_call.function.arguments)
-            match tool_call.function.name:
-                case "searchWeb":
-                    function_response = function_to_call(
-                        q = function_args.get("query"),
-                        website = function_args.get("website"),
-                        n = function_args.get("numResults")
-                    )
-                case "getFounder":
-                    function_response = function_to_call(
-                        company = function_args.get("company")
-                    )
-                case "getFunding":
-                    function_response = function_to_call(
-                        company = function_args.get("company")
-                    )
-                case "rank":
-                    function_response = function_to_call(
-                        companies = function_args.get("companies")
-                        n = 10
-                    )
-                case "output":
-                    function_response = function_to_call(
-                        company = function_args.get("company")
-                    )
-            
+            function_response = function_to_call(
+                location=function_args.get("location"),
+                unit=function_args.get("unit"),
+            )
             messages.append(
                 {
                     "tool_call_id": tool_call.id,
@@ -306,11 +288,6 @@ def main():
                     "content": function_response,
                 }
             )  
-<<<<<<< HEAD
         # extend conversation with function response
-=======
-
-            #so far there is only 1 message sent, we need to send more messages once we have executed the functions
->>>>>>> beb761ff934a83c5bc9f814ee4326c35fb6a480a
 
 main()
