@@ -5,6 +5,13 @@ import pandas as pd
 from operator import itemgetter
 import os
 from dotenv import load_dotenv
+from utils.embeddings_utils import (
+    get_embedding,
+    distances_from_embeddings,
+    tsne_components_from_embeddings,
+    chart_from_components,
+    indices_of_nearest_neighbors_from_distances,
+)
 
 load_dotenv()
 
@@ -12,6 +19,11 @@ CB_API_KEY = os.getenv("CB_API_KEY")
 
 MAX_FUNDING = 10000000
 client = OpenAI()
+
+# Function to get the embedding for some text. Primarily used for comparing with query
+def get_embedding(text, model = "text-embedding-3-small"):
+    text = text.replace("\n", " ") #tidy text
+    return client.embeddings.create(input = [text], model=model).data[0].embedding
 
 # Function to search crunchbase for results related to a query
 # The query can consist of categories 
@@ -123,10 +135,15 @@ def searchCrunchbaseCompanies(categories, n=1000):
     master["status"] = raw["properties.operating_status"]
     master=master.fillna("NA")
 
-    #process table into information that LLM can use
-    
-
-
+    #process table into information that LLM can use to create embedding
+    master["pre-embeddding"] = (
+        "Name: " + master["company"].str.strip() +
+        "; Summary: " + master["description"].str.strip() +
+        "; Industries: " + master["categories"].str.strip() +
+        "; Location: " + master["location"].str.strip() +
+        "; Employees: " + master["company"].str.strip() #more info could be added, bu may disract LLM
+        )
+    master["embedding"] = master.combined.apply(lambda x: get_embedding(x, model='text-embedding-3-small'))
 
     #print(master.to_string())
     return master
@@ -448,4 +465,8 @@ def main():
 
 
 #main()
-searchCrunchbaseCompanies(["artificial-intelligence"])
+#emporary, learning embeddings
+master = searchCrunchbaseCompanies(["artificial-intelligence"])
+query_embedding = get_embedding["Find all AI agent framework and AI agent developer tool startups"]
+distances = distances_from_embeddings(query_embedding, master["embedding"], distance_metric="cosine")
+indices_of_nearest_neighbors = indices_of_nearest_neighbors_from_distances(distances)
