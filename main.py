@@ -2,7 +2,6 @@ from openai import OpenAI
 import json
 import requests
 import pandas as pd
-from pandas.io.json import json_normalize 
 from operator import itemgetter
 
 MAX_FUNDING = 10000000
@@ -71,7 +70,7 @@ def searchCrunchbase(categories, n=1000):
     result = json.loads(r.text) #JSON containing all companies from this query
 
     #clean the data
-    raw = json_normalize(result["entities"])
+    raw = result["entities"]
 
     revenue_range = {
     "r_00000000": "Less than $1M",
@@ -117,6 +116,7 @@ def searchCrunchbase(categories, n=1000):
 
 
 
+    print(master.to_string())
 
 
 
