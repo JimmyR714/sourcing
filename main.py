@@ -111,7 +111,7 @@ def searchCrunchbaseCompanies(categories, n=1000):
     master["revenue"] = raw["properties.revenue_range"].map(revenue_range)
     master["website"] = raw["properties.website_url"]
     master["location"] = raw["properties.location_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
-    master["funding"] = raw["properties.funding_total"]
+    #master["funding"] = raw["properties.funding_total"]
     master["funding_stage"] = raw["properties.funding_stage"]
     master["founders"] = raw["properties.founder_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
     master["investors"] = raw["properties.investor_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
@@ -192,7 +192,7 @@ def main():
                     Observation 1: I now have the top 100 blockchain investment companies on GitHub
 
                     Thought 2: I need to search Crunchbase to find the top 100 blockchain investment companies 
-                    Act 2: searchCrunchbaseCompanies({"categories": "["blockchain", "investment"]"}) 
+                    Act 2: searchCrunchbaseCompanies({"categories": "["blockchain", "investment", "blockchain-investment", "bitcoin", "cryptocurrency" ...]"}) 
                     Observation 2: I now have the top 100 blockchain investment companies on crunchbase
 
                     Thought 3: I need to choose the most relevant companies from my previous searches that relate to the initial query 
@@ -220,7 +220,7 @@ def main():
                     Observation 1: I now have the top 100 best indie game development companies on GitHub
 
                     Thought 2: I need to search Crunchbase to find the top 100 indie game development companies 
-                    Act 2: searchCrunchbaseCompanies({"categories": "["game-development"]"}) 
+                    Act 2: searchCrunchbaseCompanies({"categories": "["game-development", "gaming", "indie-game", "indie-game-development" ... ]"}) 
                     Observation 2: I now have the top 100 best indie game development companies on crunchbase
 
                     Thought 3: I need to choose the most relevant companies from my previous searches that relate to the initial query 
@@ -408,7 +408,7 @@ def main():
                 case "searchCrunchbase":
                     function_response = searchCrunchbaseCompanies(
                         #TODO need to add some converter from generated categories to allowed categories
-                        #currently get "AI", "framework", "developer tools"
+                        #currently get "AI", "framework", "developer tools", "machine learning", "AI agents" etc
                         categories = function_args.get("categories"),
                         n = function_args.get("n")
                     )
@@ -443,4 +443,4 @@ def main():
 
 
 #main()
-searchCrunchbaseCompanies(["artificial-intelligence", "software"])
+searchCrunchbaseCompanies(["artificial-intelligence"])
