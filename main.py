@@ -116,7 +116,7 @@ def searchCrunchbase(categories, n=1000):
     master=master.fillna("NA")
 
 
-
+    print(master.to_string())
 
 
 
