@@ -123,6 +123,11 @@ def searchCrunchbaseCompanies(categories, n=1000):
     master["status"] = raw["properties.operating_status"]
     master=master.fillna("NA")
 
+    #process table into information that LLM can use
+    
+
+
+
     #print(master.to_string())
     return master
 
