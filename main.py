@@ -163,7 +163,7 @@ def output(company):
 # Main function that executes everything in order according to the flowchart
 # Prints the output at the end
 def main():
-    query = input("Input a query") #Take the initial input query
+    query = input("Input a query\n") #Take the initial input query
 
     #define our CoT ReAct Query
     messages = [
@@ -220,7 +220,7 @@ def main():
                     Observation 1: I now have the top 100 best indie game development companies on GitHub
 
                     Thought 2: I need to search Crunchbase to find the top 100 indie game development companies 
-                    Act 2: searchCrunchbaseCompanies({"categories": "["game development"]"}) 
+                    Act 2: searchCrunchbaseCompanies({"categories": "["game-development"]"}) 
                     Observation 2: I now have the top 100 best indie game development companies on crunchbase
 
                     Thought 3: I need to choose the most relevant companies from my previous searches that relate to the initial query 
@@ -378,24 +378,27 @@ def main():
         }   
     ]
 
+    #allow LLM to think
     response = client.chat.completions.create(
         model="gpt-4-turbo-preview",
         messages=messages,
         tools=tools,
         tool_choice="auto",
     )
+    response_message = response.choices[0].message
 
     #check for function calls
-    tool_calls = response.tool_calls
-    if tool_calls:
+    tool_calls = response_message.tool_calls
+    if tool_calls: #if there was a function call
         #TODO error handling for invalid JSONs
-        messages.append(response)  #extend conversation with assistant's reply
+        messages.append(response_message)  #extend conversation with assistant's reply
 
         # for each function call, we run the function
         for tool_call in tool_calls:
             function_name = tool_call.function.name
             function_args = json.loads(tool_call.function.arguments)
 
+            #choose the correct function to call
             match function_name:
                 case "searchGithub":
                     function_response = searchGithub(
@@ -404,6 +407,8 @@ def main():
                     )
                 case "searchCrunchbase":
                     function_response = searchCrunchbaseCompanies(
+                        #TODO need to add some converter from generated categories to allowed categories
+                        #currently get "AI", "framework", "developer tools"
                         categories = function_args.get("categories"),
                         n = function_args.get("n")
                     )
@@ -425,6 +430,7 @@ def main():
                         company = function_args.get("company")
                     )
 
+            #add the necessary function response to the messages for the next conversation
             messages.append(
                 {
                     "tool_call_id": tool_call.id,
@@ -436,4 +442,5 @@ def main():
         
 
 
-main()
+#main()
+searchCrunchbaseCompanies(["artificial-intelligence", "software"])
