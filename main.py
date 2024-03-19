@@ -5,13 +5,7 @@ import pandas as pd
 from operator import itemgetter
 import os
 from dotenv import load_dotenv
-from utils.embeddings_utils import (
-    get_embedding,
-    distances_from_embeddings,
-    tsne_components_from_embeddings,
-    chart_from_components,
-    indices_of_nearest_neighbors_from_distances,
-)
+
 
 load_dotenv()
 
@@ -28,7 +22,7 @@ def get_embedding(text, model = "text-embedding-3-small"):
 # Function to search crunchbase for results related to a query
 # The query can consist of categories 
 # Returns a dataframe containing the companies found
-def searchCrunchbaseCompanies(categories, n=1000):
+def searchCrunchbaseCompanies(categories, n=50):
     queryJSON = {
         "field_ids": [
             "identifier",
@@ -136,14 +130,14 @@ def searchCrunchbaseCompanies(categories, n=1000):
     master=master.fillna("NA")
 
     #process table into information that LLM can use to create embedding
-    master["pre-embeddding"] = (
+    master["pre-embedding"] = (
         "Name: " + master["company"].str.strip() +
         "; Summary: " + master["description"].str.strip() +
         "; Industries: " + master["categories"].str.strip() +
         "; Location: " + master["location"].str.strip() +
         "; Employees: " + master["company"].str.strip() #more info could be added, bu may disract LLM
         )
-    master["embedding"] = master.combined.apply(lambda x: get_embedding(x, model='text-embedding-3-small'))
+    master["embedding"] = master["pre-embedding"].apply(lambda x: get_embedding(x, model='text-embedding-3-small'))
 
     #print(master.to_string())
     return master
@@ -465,8 +459,11 @@ def main():
 
 
 #main()
-#emporary, learning embeddings
+#temporary, learning embeddings
 master = searchCrunchbaseCompanies(["artificial-intelligence"])
 query_embedding = get_embedding["Find all AI agent framework and AI agent developer tool startups"]
-distances = distances_from_embeddings(query_embedding, master["embedding"], distance_metric="cosine")
-indices_of_nearest_neighbors = indices_of_nearest_neighbors_from_distances(distances)
+
+
+
+#distances = distances_from_embeddings(query_embedding, master["embedding"], distance_metric="cosine")
+#indices_of_nearest_neighbors = indices_of_nearest_neighbors_from_distances(distances)
