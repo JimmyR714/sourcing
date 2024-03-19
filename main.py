@@ -1,21 +1,146 @@
 from openai import OpenAI
 import json
-import pycrunchbase
+import requests
+import pandas as pd
+from pandas.io.json import json_normalize 
+from operator import itemgetter
 
-
+MAX_FUNDING = 10000000
 client = OpenAI()
-cb = CrunchBase(CRUNCHBASE_API_KEY)
 
 # Function to search crunchbase for results related to a query
-# q is a carefully formatted query
-# Returns a list of length n containing companies that match the query
-def searchCrunchbase(query, n=100):
-    pass
+# The query can consist of categories 
+# Returns a dataframe containing the companies found
+def searchCrunchbase(categories, n=1000):
+    queryJSON = {
+        "field_ids": [
+            "identifier",
+            "short_description",
+            "categories",
+            "num_employees_enum",
+            "revenue_range",
+            "website_url",
+            "funding_total",
+            "funding_stage",
+            "founder_identifiers",
+            "investor_identifiers",
+            "num_investors",
+            "rank_delta_d7",
+            "rank_delta_d30",
+            "rank_delta_d90",
+            "rank_org",
+            "location",
+            "operating_status"
+        ],
+        "limit": n,
+        "query": [
+            {
+                "type": "predicate",
+                "field_id": "categories",
+                "operator_id": "includes",
+                "values": categories
+            },
+            {
+                "type": "predicate",
+                "field_id": "facet_id",
+                "operator_id": "includes",
+                "values": ["company"]
+            },
+            {
+                "type": "predicate",
+                "field_id": "funding_total",
+                "operator_id": "lt",
+                "values": [MAX_FUNDING]
+            },
+            {
+                "type": "predicate",
+                "field_id": "operating_status",
+                "operator_id": "eq",
+                "values": ["active"]
+            }
+        ],
+        "order": [
+            {
+                "field_id": "rank_org",
+                "sort": "asc"
+            }
+        ]
+    }
+
+    r = requests.post("https://api.crunchbase.com/api/v4/searches/organizations", params = CB_API_KEY, json = queryJSON)
+    result = json.loads(r.text) #JSON containing all companies from this query
+
+    #clean the data
+    raw = json_normalize(result["entities"])
+
+    revenue_range = {
+    "r_00000000": "Less than $1M",
+    "r_00001000": "$1M to $10M",
+    "r_00010000": "$10M to $50M",
+    "r_00050000": "$50M to $100M",
+    "r_00100000": "$100M to $500M",
+    "r_00500000": "$500M to $1B",
+    "r_01000000": "$1B to $10B",
+    "r_10000000": "$10B+"}
+
+    employee_range = {
+    "c_00001_00010": "1-10",
+    "c_00011_00050": "11-50",
+    "c_00051_00100": "51-100",
+    "c_00101_00250": "101-250",
+    "c_00251_00500": "251-500",
+    "c_00501_01000": "501-1000",
+    "c_01001_05000": "1001-5000",
+    "c_05001_10000": "5001-10000",
+    "c_10001_max": "10001+"}
+
+    master = pd.DataFrame()
+    master["uuid"] = raw["uuid"]
+    master["company"] = raw["properties.identifier.value"]
+    master["description"] = raw["properties.short_description"]
+    master["categories"] = raw["properties.categories"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
+    master["num_of_employees"] = raw["properties.num_employees_enum"].map(employee_range)
+    master["revenue"] = raw["properties.revenue_range"].map(revenue_range)
+    master["website"] = raw["properties.website_url"]
+    master["location"] = raw["properties.location_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
+    master["funding"] = raw["properties.funding_total"]
+    master["funding_stage"] = raw["properties.funding_stage"]
+    master["founders"] = raw["properties.founder_identifiers"]
+    master["investors"] = raw["properties.investor_identifiers"]
+    master["num_of_investors"] = raw["properties.num_investors"]
+    master["rank_change_week"] = raw["properties.rank_delta_d7"]
+    master["rank_change_month"] = raw["properties.rank_delta_d30"]
+    master["rank_change_quarter"] = raw["properties.rank_delta_d90"]
+    master["rank"] = raw["properties.rank_org"]
+    master["status"] = raw["properties.operating_status"]
+    master=master.fillna("NA")
+
+
+
+
+
+
+
+
+
+
 
 # Function to search github for results related to a query
 # q is a carefully formatted query
 # Returns a list of length n containing companies that match the query
 def searchGithub(query, n=100):
+    pass
+
+# Function to search product hunt for results related to a query
+# q is a carefully formatted query
+# Returns a list of length n containing companies that match the query
+def searchProductHunt(query, n=100):
+    pass
+
+# Function to search hackernews for results related to a query
+# q is a carefully formatted query
+# Returns a list of length n containing companies that match the query
+def searchHackernews(query, n=100):
     pass
 
 # Function to return the founder of a company
@@ -268,14 +393,6 @@ def main():
     tool_calls = response.tool_calls
     if tool_calls:
         #TODO error handling for invalid JSONs
-        available_functions = {
-            "searchGithub": searchGithub,
-            "searchCrunchbase": searchCrunchbase,
-            "getFounder": getFounder,
-            "getFunding": getFunding,
-            "rank": rank,
-            "output": output
-        } 
         messages.append(response)  #extend conversation with assistant's reply
 
         # for each function call, we run the function
@@ -321,6 +438,7 @@ def main():
                 }
             )  
         
-        
 
-main()
+
+#main()
+searchCrunchbase(["AI Agent framework", "AI agent developer tool", "AI"])
