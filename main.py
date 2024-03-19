@@ -1,8 +1,10 @@
 from openai import OpenAI
 import json
+import pycrunchbase
 
 
 client = OpenAI()
+cb = CrunchBase(CRUNCHBASE_API_KEY)
 
 # Function to search crunchbase for results related to a query
 # q is a carefully formatted query
@@ -16,15 +18,19 @@ def searchCrunchbase(query, n=100):
 def searchGithub(query, n=100):
     pass
 
+# Function to return the founder of a company
 def getFounder(company):
     pass
 
+# Function to return the founder of a company
 def getFunding(company):
     pass
 
+# Function that ranks the top n companies out of a larger set
 def rank(companies, n=10):
     pass
 
+# Function that takes company and gathers then outputs the information about it
 def output(company):
     pass
 
@@ -263,7 +269,8 @@ def main():
     if tool_calls:
         #TODO error handling for invalid JSONs
         available_functions = {
-            "searchWeb": searchWeb,
+            "searchGithub": searchGithub,
+            "searchCrunchbase": searchCrunchbase,
             "getFounder": getFounder,
             "getFunding": getFunding,
             "rank": rank,
@@ -274,12 +281,37 @@ def main():
         # for each function call, we run the function
         for tool_call in tool_calls:
             function_name = tool_call.function.name
-            function_to_call = available_functions[function_name]
             function_args = json.loads(tool_call.function.arguments)
-            function_response = function_to_call(
-                location=function_args.get("location"),
-                unit=function_args.get("unit"),
-            )
+
+            match function_name:
+                case "searchGithub":
+                    function_response = searchGithub(
+                        query = function_args.get("query"),
+                        n = function_args.get("n")
+                    )
+                case "searchCrunchbase":
+                    function_response = searchCrunchbase(
+                        query = function_args.get("query"),
+                        n = function_args.get("n")
+                    )
+                case "getFounder":
+                    function_response = getFounder(
+                        company = function_args.get("company")
+                    )
+                case "getFunding":
+                    function_response = getFounder(
+                        company = function_args.get("company")
+                    )
+                case "rank":
+                    function_response = searchGithub(
+                        companies = function_args.get("companies"),
+                        n = function_args.get("n")
+                    )
+                case "output":
+                    function_response = output(
+                        company = function_args.get("company")
+                    )
+
             messages.append(
                 {
                     "tool_call_id": tool_call.id,
@@ -288,6 +320,7 @@ def main():
                     "content": function_response,
                 }
             )  
-        # extend conversation with function response
+        
+        
 
 main()
