@@ -11,7 +11,7 @@ load_dotenv()
 
 CB_API_KEY = os.getenv("CB_API_KEY")
 
-MAX_FUNDING = 10000000
+MAX_FUNDING = 100000000
 client = OpenAI()
 
 # Function to get the embedding for some text. Primarily used for comparing with query
@@ -152,7 +152,7 @@ def searchCrunchbaseFounder(founderUUID):
 
     def getCompany(c):
         return "Name: " + c["identifier.value"] + "; Description: " + c["short_description"] + "; Valuation: " + c["valuation"] + "; Status: " + c["status"]
-
+        #change valuation to funding ideally
 
     url = f"https://api.crunchbase.com/api/v4/entities/people/{founderUUID}?user_key="+CB_API_KEY
     headers = {"accept": "application/json"}
@@ -278,13 +278,13 @@ def rank(companies, query, n=10):
                 2) Companies that have founders that are based in the US are better than those that don't
                 3) Companies that have founders that have degrees from top-tier universities 
                 e.g. Oxford, Cambridge, Harvard, Stanford, MIT, etc are better that those that don't
-                3) Companies that have founders that have previously been employed by top-tier companies 
+                4) Companies that have founders that have previously been employed by top-tier companies 
                 e.g. Google, Amazon, Apple, Meta etc are better than those that don't
-                4) Companies that have founders that have had previous entrepeneurial success
+                5) Companies that have founders that have had previous entrepeneurial success
                 e.g. founding a company with a high valuation, founding a company that has been acquired, etc
                 are better than those that don't
-                5) Companies that have a higher improvement over the last quarter, month and week are better
-                6) Companies that have top-tier investors are better than those that don't
+                6) Companies that have a higher improvement over the last quarter, month and week are better
+                7) Companies that have top-tier investors are better than those that don't
                 You should evaulate the companies according to all criteria, with slightly more weight
                 given to the higher criteria e.g. 1,2 than the lower ones.
                 You should output the names of the top {str(n)} companies by descending rank as a list of integers.
