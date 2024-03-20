@@ -5,7 +5,7 @@ import pandas as pd
 from operator import itemgetter
 import os
 from dotenv import load_dotenv
-
+from embeddings_utils import *
 
 load_dotenv()
 
@@ -41,7 +41,7 @@ def searchCrunchbaseCompanies(categories, n=50):
             "rank_delta_d90",
             "rank_org",
             "location_identifiers",
-            "operating_status"
+            "operating_status" #TODO founding date after 2021
         ],
         "limit": n,
         "query": [
@@ -49,25 +49,31 @@ def searchCrunchbaseCompanies(categories, n=50):
                 "type": "predicate",
                 "field_id": "categories",
                 "operator_id": "includes",
-                "values": categories
+                "values": categories #only look for companies including these categories
             },
             {
                 "type": "predicate",
                 "field_id": "facet_ids",
                 "operator_id": "includes",
-                "values": ["company"]
+                "values": ["company"] #finding only companies
             },
             {
                 "type": "predicate",
                 "field_id": "funding_total",
                 "operator_id": "lt",
-                "values": [MAX_FUNDING]
+                "values": [MAX_FUNDING] #funding less than MAX_FUNDING
             },
             {
                 "type": "predicate",
                 "field_id": "operating_status",
                 "operator_id": "eq",
-                "values": ["active"]
+                "values": ["active"] #active companies
+            },
+            {
+                "type": "predicate",
+                "field_id": "founded_on",
+                "operator_id": "gte",
+                "values": [{"precision": "year", "value": "2021"}] #founding date after 2021
             }
         ],
         "order": [
@@ -117,7 +123,7 @@ def searchCrunchbaseCompanies(categories, n=50):
     master["revenue"] = raw["properties.revenue_range"].map(revenue_range)
     master["website"] = raw["properties.website_url"]
     master["location"] = raw["properties.location_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
-    #master["funding"] = raw["properties.funding_total"]
+    master["funding"] = raw["properties.funding_total"] #TODO fix the bug where funding cannot be collected
     master["funding_stage"] = raw["properties.funding_stage"]
     master["founders"] = raw["properties.founder_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
     master["investors"] = raw["properties.investor_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
@@ -129,18 +135,112 @@ def searchCrunchbaseCompanies(categories, n=50):
     master["status"] = raw["properties.operating_status"]
     master=master.fillna("NA")
 
-    #process table into information that LLM can use to create embedding
-    master["pre-embedding"] = (
-        "Name: " + master["company"].str.strip() +
-        "; Summary: " + master["description"].str.strip() +
-        "; Industries: " + master["categories"].str.strip() +
-        "; Location: " + master["location"].str.strip() +
-        "; Employees: " + master["company"].str.strip() #more info could be added, bu may disract LLM
-        )
-    master["embedding"] = master["pre-embedding"].apply(lambda x: get_embedding(x, model='text-embedding-3-small'))
-
     #print(master.to_string())
     return master
+
+# Function that searches crunchbase for founders/investors given their uuid
+# Much more information can be acquired if necessary
+# returns a dataframe containing the information about the person
+def searchCrunchbaseFounder(founderUUID):
+    # a lot more information could be added to each of these functions, but we need to be careful not to do too much or else
+    # evaluating the quality will get expensive and detract from what we want LLM to look for
+    def getDegree(d):
+        return "Type: " + d["type_name"] + "; School: " + d["school_identifier.value"] + "; Subject: " + d["subject"] + "Completed on: " + d["completed_on"]
+
+    def getJob(j):
+        return "Title: " + j["title"] + "; Employer: " + j["organization_identifier"] + "; Started: " + j["started_on.value"] + "; Finished: " + j["ended_on.value"]
+
+    def getCompany(c):
+        return "Name: " + c["identifier.value"] + "; Description: " + c["short_description"] + "; Valuation: " + c["valuation"] + "; Status: " + c["status"]
+
+
+    url = f"https://api.crunchbase.com/api/v4/entities/people/{founderUUID}?user_key="+CB_API_KEY
+    headers = {"accept": "application/json"}
+
+    r = requests.get(url=url, header=headers)
+    result = json.loads(r.text) #JSON containing all information about the founder
+
+    #clean the data
+    raw = pd.json_normalize(result)
+    founder = pd.DataFrame()
+    founder["name"] = raw["properties.identifier.value"]
+    founder["gender"] = raw["properties.gender"]
+    founder["born_on"] = raw["properties.born_on"]
+    founder["degrees"] = raw["cards.degrees"].apply(lambda x: list(map(getDegree, x) if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
+    founder["location"] = raw["properties.location_identifiers"]
+    founder["jobs"] = raw["cards.jobs"].apply(lambda x: list(map(getJob, x) if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
+    founder["companies"] = raw["cards.founded_organizations"].apply(lambda x: list(map(getCompany, x) if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
+
+    return founder
+
+# Function that takes a dataframe for a founder and formats it into a string
+def outputFounder(f):
+    return f"Name: {f["name"]}; Gender: {f["gender"]}; Born on: {f["born_on"]}; Located in: {f["location"]}\nDegrees: {f["degrees"]}\nPrevious Jobs: {f["jobs"]}\nPrevious Companies: {f["companies"]}"
+
+# Function that takes a dataframe of companies, a query, 
+# and reduces the dataframe to the n most relevant companies
+# Returns the refined dataframe
+def refine(df, n, query):
+    #process table into information that LLM can use to create embedding
+    df["pre-embedding"] = (
+        "Name: " + df["company"].str.strip() +
+        "; Summary: " + df["description"].str.strip() +
+        "; Industries: " + df["categories"].str.strip() +
+        "; Location: " + df["location"].str.strip() #+
+        #"; Employees: " + df["num_of_employees"].str.strip() #more info could be added, but may distract LLM
+        #include investor names, founder background (possibly at a later stage)
+        )
+    df["embedding"] = df["pre-embedding"].apply(lambda x: get_embedding(x, model='text-embedding-3-small'))
+
+    #get the embedding for the query
+    query_embedding = get_embedding[query]
+
+    #find relevance of companies
+    df["embedding_distance"] = df["embedding"].apply(lambda x: abs(distance_from_embedding(query_embedding, x, distance_metric="cosine")))
+    #choose the n most relevant companies
+    refined = df.nsmallest(n, "embedding_distance")
+    return refined
+
+# Function that takes a query and returns crunchbase categories that most relate to that query
+# Currently requires category list; may be difficult to adapt to work without the category list
+def chooseCategory(query):
+    categoryList = [] #this will be filled with the roughly 800 categories
+    messages = [
+        {
+            "role": "system", 
+            "content": 
+                """
+                You are a helpful assistant that takes an input query which is a description of a company. 
+                Your job is to turn this query into a series of categories that most relate to the company description.
+                You can return up to 3 different categories, but your main goal is to be precise, so if you can't find 3 suitable categories,
+                you may return only 1. You must return at least 1 category. You have a list of categories to choose from, 
+                the categories that you return must be selected from this list. The categories are separated by commas.
+                The list is: 
+                """ + categoryList.toString()
+        },
+        {
+            "role": "user",
+            "content": 
+                """
+                Q: Find me the top 10 IT companies that do conulting.
+                A: 
+                IT stands for information technology, so I should include the category "information-technology" from the list. 
+                The query mentions consulting, so I should include "consulting". There are no other relevant categories, so
+                the answer is ["information-technology", "consulting"]
+                Q: Find me the top 10 biotech companies that are researching AI.
+                A: 
+                Biotech is short for biotechnology, so I must include the category "biotechnology" from the list. 
+                We need companies researching AI, AI is short for artificial intelligence, so I should include the
+                category "artificial-intelligence" from the list. There is no category for research, so I have all of the
+                relevant categories, so the answer is ["biotechnology", "artificial-intelligence"]
+                Q: 
+                """+query
+        }
+    ]
+
+    #allow LLM to choose categories
+    response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages)
+    return response
 
 # Function to search github for results related to a query
 # q is a carefully formatted query
@@ -160,28 +260,82 @@ def searchProductHunt(query, n=100):
 def searchHackernews(query, n=100):
     pass
 
-# Function to return the founder of a company
-def getFounder(company):
-    pass
-
-# Function to return the founder of a company
-def getFunding(company):
-    pass
-
 # Function that ranks the top n companies out of a larger set
-def rank(companies, n=10):
-    pass
+# Input is the dataframe containing all of the information about each company 
+# This input data includes founder information
+# Outputs the top n companies as a list of indices
+def rank(companies, query, n=10):
 
-# Function that takes company and gathers then outputs the information about it
-def output(company):
-    pass
+    messages = [
+        {
+            "role": "system", 
+            "content": 
+                f"""
+                You are a helpful assistant that takes as input a set of companies. Your job is to 
+                choose the {str(n)} most relevant companies according to the following criteria:
+                1) The company must be relevant to the query
+                2) Companies that have founders that are based in the US are better than those that don't
+                3) Companies that have founders that have degrees from top-tier universities 
+                e.g. Oxford, Cambridge, Harvard, Stanford, MIT, etc are better that those that don't
+                3) Companies that have founders that have previously been employed by top-tier companies 
+                e.g. Google, Amazon, Apple, Meta etc are better than those that don't
+                4) Companies that have founders that have had previous entrepeneurial success
+                e.g. founding a company with a high valuation, founding a company that has been acquired, etc
+                are better than those that don't
+                5) Companies that have a higher improvement over the last quarter, month and week are better
+                6) Companies that have top-tier investors are better than those that don't
+                You should evaulate the companies according to all criteria, with slightly more weight
+                given to the higher criteria e.g. 1,2 than the lower ones.
+                You should output the names of the top {str(n)} companies by descending rank as a list of integers.
+                """
+        },
+        {
+            "role": "user", 
+            "content": 
+                f"""
+                Q: The query is:
+                The companies are:
+                {companyDetails1}
+                A: 
+                {companyAnalysis1} 
+                Q: The query is:
+                The companies are:
+                {companyDetails2}
+                A:
+                {companyAnalysis2}
+                Q: The query is: 
+                """ + query + "\nThe companies are:\n" + companies
+        }
+    ]
 
-# Main function that executes everything in order according to the flowchart
-# Prints the output at the end
-def main():
+    response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages)
+    return response
+
+# Function that takes a list of companies, each with their relevant company information and outputs the necessary information about each one
+# Input data contains all information
+# Much more could be returned right now
+def outputCompanies(companies, indices):
+    #assert(len(indices) <= 10)
+    def outputCompany(company):
+        return f"{company["company"]}\n{company["website"]}\n{company["description"]}\n{company["founder_info"]}\n{company["funding_info"]}\n"
+    
+    print("------------------------------------------------------------\n")
+    for index,rank in enumerate(indices):
+        print(f"{rank+1}.\n{outputCompany(companies[index])}\n------------------------------------------------------------\n")
+
+# LLM that controls the flow of the program. Uses a crew of LLMs to decide what tools to use, 
+# complete different parts of the procedure, etc
+# Always runs in 6 sections:
+# 1) Pre-search preparation
+# 2) Searching for companies
+# 3) Refinement of searches
+# 4) Pre-ranking preparation
+# 5) Ranking companies
+# 6) Outputting companies
+def controller():
     query = input("Input a query\n") #Take the initial input query
 
-    #define our CoT ReAct Query
+    #define initial messages. These start off as a CoT ReAct Query
     messages = [
                 {"role": "system", 
                  "content": 
@@ -267,29 +421,6 @@ def main():
         {
             "type": "function",
             "function": {
-                "name": "searchGithub",
-                "description": "Search a query on github",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "query to be searched"
-                        },
-                        "numResults": {
-                            "type": "number",
-                            "description": "number of results for search to return. default is 100"
-                        }
-                    },
-                    "required": [
-                        "query"
-                    ]
-                }
-            }
-        },
-        {
-            "type": "function",
-            "function": {
                 "name": "searchCrunchbaseCompanies",
                 "description": "Search for companies in certain categories on crunchbase",
                 "parameters": {
@@ -316,18 +447,18 @@ def main():
         {
             "type": "function",
             "function": {
-                "name": "getFunding",
-                "description": "find the funding amount and background for a given company",
+                "name": "searchCrunchbaseFounders",
+                "description": "Search for founders backgrounds on crunchbase",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "company": {
-                            "type": "string",
-                            "description": "the company that we want to find the funding for"
+                        "df": {
+                            "type": "object",
+                            "description": "the dataframe containing the founders that we will get the backgrounds of"
                         }
                     },
                     "required": [
-                        "company"
+                        "df"
                     ]
                 }
             }
@@ -335,18 +466,47 @@ def main():
         {
             "type": "function",
             "function": {
-                "name": "getFounder",
-                "description": "find the founders and their background for a given company",
+                "name": "refine",
+                "description": "takes a large list of companies and chooses only the ones that are most relevant to a query",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "company": {
+                        "df": {
+                            "type": "object",
+                            "description": "a large list of companies, with all of the relevant information about them. aquired from searching a website for companies"
+                        },
+                        "n": {
+                            "type": "number",
+                            "description" : "the number of companies that we want remaining after refinement"
+                        },
+                        "query" : {
                             "type": "string",
-                            "description": "the company that we want to find the founder for"
+                            "description": "the description of a company that we are comparing each of our found companies to"
                         }
                     },
                     "required": [
-                        "company"
+                        "df",
+                        "n",
+                        "query"
+                    ]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "chooseCategory",
+                "description": "takes a description of a company and returns some categories that can be searched on crunchbase",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "object",
+                            "description": "short description of a company"
+                        }
+                    },
+                    "required": [
+                        "query"
                     ]
                 }
             }
@@ -376,94 +536,88 @@ def main():
         {
             "type": "function",
             "function": {
-                "name": "outputCompany",
-                "description": "takes a company and the detailed information, and outputs the website URL, name, description, founders and their background, funding and its background",
+                "name": "outputCompanies",
+                "description": "takes a dataframe of companies and their detailed information, along with a list of indices, and outputs the website URL, name, description, founders and their background, funding and its background for each company at an index in the dataframe",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "company": {
+                        "companies": {
                             "type": "object",
-                            "description": "all of the required detailed information for the company to be outputted"
+                            "description": "all of the required detailed information for the companies to be outputed"
+                        },
+                        "indices": {
+                            "type": "array",
+                            "items": {
+                                "type": "number",
+                                "description": "an index in the dataframe"
+                            },
+                            "description": "the list of indices of the companies to be outputted"
                         }
                     },
                     "required": [
-                        "company"
+                        "companies",
+                        "indices"
                     ]
                 }
             }
-        }   
+        },
+        
+        
     ]
 
-    #allow LLM to think
-    response = client.chat.completions.create(
-        model="gpt-4-turbo-preview",
-        messages=messages,
-        tools=tools,
-        tool_choice="auto",
-    )
-    response_message = response.choices[0].message
+    #this stores the very large arguments that we don't want to keep passing to the LLM e.g. 100 companies and all their data
+    local_args = {} 
 
-    #check for function calls
-    tool_calls = response_message.tool_calls
-    if tool_calls: #if there was a function call
-        #TODO error handling for invalid JSONs
-        messages.append(response_message)  #extend conversation with assistant's reply
+    for stage in range(1,7):
+        #allow LLM to think about messages up to this stage
+        response = client.chat.completions.create(
+            model="gpt-4-turbo-preview",
+            messages=messages,
+            tools=tools,
+            tool_choice="auto",
+        )
+        response_message = response.choices[0].message
 
-        # for each function call, we run the function
-        for tool_call in tool_calls:
-            function_name = tool_call.function.name
-            function_args = json.loads(tool_call.function.arguments)
+        #check for function calls at this stage
+        tool_calls = response_message.tool_calls
+        if tool_calls: #if there was a function call
+            #TODO error handling for invalid JSONs
+            messages.append(response_message)  #extend conversation with assistant's reply
 
-            #choose the correct function to call
-            match function_name:
-                case "searchGithub":
-                    function_response = searchGithub(
-                        query = function_args.get("query"),
-                        n = function_args.get("n")
-                    )
-                case "searchCrunchbase":
-                    function_response = searchCrunchbaseCompanies(
-                        #TODO need to add some converter from generated categories to allowed categories
-                        #currently get "AI", "framework", "developer tools", "machine learning", "AI agents" etc
-                        categories = function_args.get("categories"),
-                        n = function_args.get("n")
-                    )
-                case "getFounder":
-                    function_response = getFounder(
-                        company = function_args.get("company")
-                    )
-                case "getFunding":
-                    function_response = getFounder(
-                        company = function_args.get("company")
-                    )
-                case "rank":
-                    function_response = searchGithub(
-                        companies = function_args.get("companies"),
-                        n = function_args.get("n")
-                    )
-                case "output":
-                    function_response = output(
-                        company = function_args.get("company")
-                    )
+            # for each function call, we run the function
+            for tool_call in tool_calls:
+                function_name = tool_call.function.name
+                function_args = json.loads(tool_call.function.arguments)
 
-            #add the necessary function response to the messages for the next conversation
-            messages.append(
-                {
-                    "tool_call_id": tool_call.id,
-                    "role": "tool",
-                    "name": function_name,
-                    "content": function_response,
-                }
-            )  
-        
+                #choose the correct function to call, and update variables where necessary
+                match function_name:
+                    case "searchCrunchbaseCompanies":
+                        #add the companies to the local arguments
+                        local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
+                        function_response = f"{local_args["companies"].length} companies found"
+                    case "searchCrunchbaseFounders": #LLM dosn't know the UUIDs, it will tell us which dataframe to find the founders for
+                        for row in function_args["df"]:
+                            row["founder_background"] = outputFounder(searchCrunchbaseFounder(row["founder"]))
+                        function_response = f"Founder backgrounds have been located"
+                    case "refine":
+                        local_args.update({"refined_companies": refine(function_args["df"], function_args["n"], function_args["query"])})
+                        function_response = f"{local_args["refined_companies"].length} remaining"
+                    case "chooseCategory":
+                        function_response = str(chooseCategory(function_args["query"]))
+                    case "rank":
+                        function_response = str(rank(function_args["companies"], function_args["query"], function_args["n"]))
+                    case "outputCompanies":
+                        outputCompanies(function_args["companies"], function_args["indices"])
+                        function_response = "Outputting finished. Task complete."
 
+                #add the necessary function response to the messages for the next conversation
+                messages.append(
+                    {
+                        "tool_call_id": tool_call.id,
+                        "role": "tool",
+                        "name": function_name,
+                        "content": function_response,
+                    }
+                )  
 
-#main()
-#temporary, learning embeddings
-master = searchCrunchbaseCompanies(["artificial-intelligence"])
-query_embedding = get_embedding["Find all AI agent framework and AI agent developer tool startups"]
-
-
-
-#distances = distances_from_embeddings(query_embedding, master["embedding"], distance_metric="cosine")
-#indices_of_nearest_neighbors = indices_of_nearest_neighbors_from_distances(distances)
+controller()
