@@ -69,12 +69,12 @@ def searchCrunchbaseCompanies(categories, n=50):
                 "operator_id": "eq",
                 "values": ["active"] #active companies
             },
-            {
-                "type": "predicate",
-                "field_id": "founded_on",
-                "operator_id": "gte",
-                "values": [{"precision": "year", "value": "2021"}] #founding date after 2021
-            }
+            #{
+            #    "type": "predicate",
+            #    "field_id": "founded_on",
+            #    "operator_id": "gte",
+            #    "values": [{"precision": "year", "value": "2021"}] #founding date after 2021
+            #}
         ],
         "order": [
             {
@@ -123,7 +123,7 @@ def searchCrunchbaseCompanies(categories, n=50):
     master["revenue"] = raw["properties.revenue_range"].map(revenue_range)
     master["website"] = raw["properties.website_url"]
     master["location"] = raw["properties.location_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
-    master["funding"] = raw["properties.funding_total"] #TODO fix the bug where funding cannot be collected
+    #master["funding"] = raw["properties.funding_total"] #TODO fix the bug where funding cannot be collected
     master["funding_stage"] = raw["properties.funding_stage"]
     master["founders"] = raw["properties.founder_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
     master["investors"] = raw["properties.investor_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
@@ -174,13 +174,14 @@ def searchCrunchbaseFounder(founderUUID):
     return founder
 
 # Function that takes a dataframe for a founder and formats it into a string
-def outputFounder(f):
-    return f"Name: {f["name"]}; Gender: {f["gender"]}; Born on: {f["born_on"]}; Located in: {f["location"]}\nDegrees: {f["degrees"]}\nPrevious Jobs: {f["jobs"]}\nPrevious Companies: {f["companies"]}"
+def outputFounder(founder):
+    return f"""Name: {founder["name"]}; Gender: {founder["gender"]}; Born on: {founder["born_on"]}; Located in: {founder["location"]}
+    Degrees: {founder["degrees"]}\nPrevious Jobs: {founder["jobs"]}\nPrevious Companies: {founder["companies"]}"""
 
 # Function that takes a dataframe of companies, a query, 
 # and reduces the dataframe to the n most relevant companies
 # Returns the refined dataframe
-def refine(df, n, query):
+def refine(df, query, n=100):
     #process table into information that LLM can use to create embedding
     df["pre-embedding"] = (
         "Name: " + df["company"].str.strip() +
@@ -193,7 +194,7 @@ def refine(df, n, query):
     df["embedding"] = df["pre-embedding"].apply(lambda x: get_embedding(x, model='text-embedding-3-small'))
 
     #get the embedding for the query
-    query_embedding = get_embedding[query]
+    query_embedding = get_embedding(query)
 
     #find relevance of companies
     df["embedding_distance"] = df["embedding"].apply(lambda x: abs(distance_from_embedding(query_embedding, x, distance_metric="cosine")))
@@ -204,7 +205,7 @@ def refine(df, n, query):
 # Function that takes a query and returns crunchbase categories that most relate to that query
 # Currently requires category list; may be difficult to adapt to work without the category list
 def chooseCategory(query):
-    categoryList = [] #this will be filled with the roughly 800 categories
+    categoryList = ["biotechnology", "gaming", "information-technology", "artificial-intelligence", "marketing", "consulting"] #this will be filled with the roughly 800 categories
     messages = [
         {
             "role": "system", 
@@ -216,13 +217,13 @@ def chooseCategory(query):
                 you may return only 1. You must return at least 1 category. You have a list of categories to choose from, 
                 the categories that you return must be selected from this list. The categories are separated by commas.
                 The list is: 
-                """ + categoryList.toString()
+                """ + ", ".join(map(str,categoryList))
         },
         {
             "role": "user",
             "content": 
                 """
-                Q: Find me the top 10 IT companies that do conulting.
+                Q: Find me the top 10 IT companies that do consulting.
                 A: 
                 IT stands for information technology, so I should include the category "information-technology" from the list. 
                 The query mentions consulting, so I should include "consulting". There are no other relevant categories, so
@@ -240,7 +241,7 @@ def chooseCategory(query):
 
     #allow LLM to choose categories
     response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages)
-    return response
+    return response.choices[0].message.content
 
 # Function to search github for results related to a query
 # q is a carefully formatted query
@@ -289,22 +290,10 @@ def rank(companies, query, n=10):
                 You should output the names of the top {str(n)} companies by descending rank as a list of integers.
                 """
         },
-        {
+        { #eventually, this will be filled with a CoT ReAct prompt
             "role": "user", 
             "content": 
-                f"""
-                Q: The query is:
-                The companies are:
-                {companyDetails1}
-                A: 
-                {companyAnalysis1} 
-                Q: The query is:
-                The companies are:
-                {companyDetails2}
-                A:
-                {companyAnalysis2}
-                Q: The query is: 
-                """ + query + "\nThe companies are:\n" + companies
+                "Q: The query is: " + query + "\nThe companies are:\n" + companies + "\n Let's think about this step by step, and have a good reason according to the evaluation points for each choice"
         }
     ]
 
@@ -317,7 +306,7 @@ def rank(companies, query, n=10):
 def outputCompanies(companies, indices):
     #assert(len(indices) <= 10)
     def outputCompany(company):
-        return f"{company["company"]}\n{company["website"]}\n{company["description"]}\n{company["founder_info"]}\n{company["funding_info"]}\n"
+        return company["company"] + "\n" + company["website"] + "\n" + company["description"] + "\n" + company["founder_info"] + "\n" + company["funding_info"] + "\n"
     
     print("------------------------------------------------------------\n")
     for index,rank in enumerate(indices):
@@ -341,76 +330,79 @@ def controller():
                  "content": 
                     """
                     You are a helpful assistant that takes an input query which is a description of a company. 
-                    Your job is to search GitHub, Crunchbase, and the web to find the 1000 most relevant companies to the query. 
-                    Then for each company, you will get the founder along with a description of their professional and educational background. 
-                    You will also get the level of funding and where it is coming from. 
-                    Then, you will use this information to rank the top 10 best companies based on the similarity of the query, 
-                    founder based in the US, founder background is from top-tier universities (e.g. Oxford) or top-tier employers (e.g. Google)
-                    or prior entrepreneurial success/exit and less than $10M funding. 
-                    For each company in the top 10, you will output: the website URL and name; a brief 10-word description of the company; 
-                    a concise description of the background of the founders (if found) in 2 sentences with university and employer names, 
-                    and prior entrepreneurial exits (if any); and a background of the funding information (if found).
+                    Your job is to find the top 10 companies related to this query.
+                    You will do this in 6 stages:
+                    1) Get all information needed to search the web, e.g. get the crunchbase categories related to the query so we can search crunchbase
+                    2) Search the web for 1000s of companies relating to the query, e.g. search crunchbase using the categories we just obtained
+                    3) Refine the set of companies down to around 100 using the information found and the query
+                    4) Find all information relevant to our final 100 companies, including founder backgrounds
+                    5) Rank the top 10 companies using all of the information found and the query
+                    6) Output the companies with all necessary information
                     """
                 },
                 {"role": "user", 
                  "content": 
                     """
-                    Q: Tell me the top 10 blockchain investment companies 
+                    Q: Tell me the top 10 blockchain investment companies
                     A: 
-                    Thought 1: I need to search GitHub to find the top 100 blockchain investment companies 
-                    Act 1: searchGitHub({"query": "blockchain investment companies", "n": 1000}) 
-                    Observation 1: I now have the top 100 blockchain investment companies on GitHub
+                    Thought 1: I need to get all information needed to search the web. I will be searching crunchbase to find the companies.
+                    To search crunchbase, I need the categories to search for that relate to the query. I cannot search crunchbase yet. 
+                    I should only search for a category once, and use the important part of the query for the search.
+                    Act 1: chooseCategory("blockchain investment companies")
+                    Observation 1: I now have the categories - ["blockchain-investment", "cryptocurrency"]
 
-                    Thought 2: I need to search Crunchbase to find the top 100 blockchain investment companies 
-                    Act 2: searchCrunchbaseCompanies({"categories": "["blockchain", "investment", "blockchain-investment", "bitcoin", "cryptocurrency" ...]"}) 
-                    Observation 2: I now have the top 100 blockchain investment companies on crunchbase
+                    Thought 2: I need to perform a search for companies related to the query. I will be searching crunchbase for this. 
+                    I have the categories to search for. I want to search for 1000 companies related to these categories.
+                    Act 2: searchCrunchbaseCompanies(categories = ["blockchain-investment", "cryptocurrency"], n=1000)
+                    Observation 2: 1000 companies found
 
-                    Thought 3: I need to choose the most relevant companies from my previous searches that relate to the initial query 
-                    Act 3: Remove the companies that are least relevant to the prompt, so I only have 50 left 
-                    Observation 3: I have the top 50 blockchain investment companies
+                    Thought 3: I have 1000 companies, but I need to refine this down to 100.
+                    Act 3: refine("blockchain investment companies", n=100)
+                    Observation 3: 100 companies remaining.
 
-                    Thought 4: I need to find the funding and founder for each of the top 50 companies 
-                    Act 4: getFunding({"company": "company1"}), getFounder({"company": "company1"}), 
-                           getFunding("company": "company2"}), getFounder("company": "company2"}), ... 
-                           getFunding({"company": "company50"}), getFounder({"company": "company50"}) 
-                    Observation 4: I now have all of the information necessary to rank the top 50 companies
+                    Thought 4: I need to find the more detailed information on each of the 100 remaining companies. I should find the 
+                    information about the background of each founder.
+                    Act 4: searchCrunchbaseFounders()
+                    Observation 4: Founder backgrounds have been located.
 
-                    Thought 5: I need to rank the top 10 companies 
-                    Act 5: rank([{"company": "company1"}, ... {"company": "company50"}]) 
-                    Observation 5: I now have the top 10 ranked companies for the query
+                    Thought 5: Now that I have the more in depth information, I need to rank each of the companies to find the top 10. 
+                    Act 5: rank("blockchain investment companies", n=10)
+                    Observation 5: The top 10 companies are stored at indices [4,1,9,39,12,43,99,64,70,71]
 
-                    Thought 6: I need to output the information for each of the top 10 companies 
-                    Act 6: outputCompany({"company": "company1}), ... outputCompany({"company": "company10"}) 
-                    Observation 6: I have finished
+                    Thought 6: I have the top 10 companies, I just need to output them
+                    Act 6: outputCompanies([4,1,9,39,12,43,99,64,70,71])
+                    Observation 6: Outputting finished. Task complete.
 
-                    Q: Find me the best indie game development companies 
-                    A: 
-                    Thought 1: I need to search GitHub to find the top 100 best indie game development companies 
-                    Act 1: searchGitHub({"query": "best indie game development companies", "numResults": 100}) 
-                    Observation 1: I now have the top 100 best indie game development companies on GitHub
+                    Q: Give me the top 10 indie game development companies
+                    A:
+                    Thought 1: I need to get all information needed to search the web. I will be searching crunchbase to find the companies.
+                    To search crunchbase, I need the categories to search for that relate to the query. I should only try to choose a single list
+                    of categories, so I should call chooseCategory only once, using the key information from the query.
+                    Act 1: chooseCategory("indie game development")
+                    Observation 1: I now have the categories - ["gaming", "game-development"]
 
-                    Thought 2: I need to search Crunchbase to find the top 100 indie game development companies 
-                    Act 2: searchCrunchbaseCompanies({"categories": "["game-development", "gaming", "indie-game", "indie-game-development" ... ]"}) 
-                    Observation 2: I now have the top 100 best indie game development companies on crunchbase
+                    Thought 2: I need to perform a search for companies related to the query. I will be searching crunchbase for this. 
+                    I have the categories to search for. I want to search for 1000 companies related to these categories.
+                    Act 2: searchCrunchbaseCompanies(categories = ["gaming", "game-development"], n=1000)
+                    Observation 2: 1000 companies found. 
 
-                    Thought 3: I need to choose the most relevant companies from my previous searches that relate to the initial query 
-                    Act 3: Remove the companies that are least relevant to the prompt, so I only have 50 left 
-                    Observation 3: I have the top 50 indie game development companies
+                    Thought 3: I have 1000 companies, but I need to refine this down to 100.
+                    Act 3: refine("indie game development, n=100")
+                    Observation 3: 100 companies remaining.
 
-                    Thought 4: I need to find the funding and founder for each of the top 50 companies 
-                    Act 4: getFunding({"company": "company1"}), getFounder({"company": "company1"}), 
-                           getFunding("company": "company2"}), getFounder("company": "company2"}), ... 
-                           getFunding({"company": "company50"}), getFounder({"company": "company50"}) 
-                    Observation 4: I now have all of the information necessary to rank the top 50 companies
+                    Thought 4: I need to find the more detailed information on each of the 100 remaining companies. I should find the 
+                    information about the background of each founder.
+                    Act 4: searchCrunchbaseFounders()
+                    Observation 4: Founder backgrounds have been located.
 
-                    Thought 5: I need to rank the top 10 companies 
-                    Act 5: rank([{"company": "company1"}, ... {"company": "company50"}]) 
-                    Observation 5: I now have the top 10 ranked companies for the query
+                    Thought 5: Now that I have the more in depth information, I need to rank each of the companies to find the top 10. 
+                    Act 5: rank("indie game development", n=10)
+                    Observation 5: The top 10 companies are stored at indices [61, 21, 34, 5, 72, 87, 20, 29, 71, 2]
 
-                    Thought 6: I need to output the information for each of the top 10 companies 
-                    Act 6: outputCompany({"company": "company1}), ... outputCompany({"company": "company10"}) 
-                    Observation 6: I have finished
-
+                    Thought 6: I have the top 10 companies, I just need to output them
+                    Act 6: outputCompanies([61, 21, 34, 5, 72, 87, 20, 29, 71, 2])
+                    Observation 6: Outputting finished. Task complete.
+        
                     Q: 
                     """ + query
                 }
@@ -435,11 +427,12 @@ def controller():
                         },
                         "n": {
                             "type": "number",
-                            "description": "number of results for search to return. default is 1000"
+                            "description": "number of results for search to return"
                         }
                     },
                     "required": [
-                        "categories"
+                        "categories",
+                        "n"
                     ]
                 }
             }
@@ -449,18 +442,6 @@ def controller():
             "function": {
                 "name": "searchCrunchbaseFounders",
                 "description": "Search for founders backgrounds on crunchbase",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "df": {
-                            "type": "object",
-                            "description": "the dataframe containing the founders that we will get the backgrounds of"
-                        }
-                    },
-                    "required": [
-                        "df"
-                    ]
-                }
             }
         },
         {
@@ -471,10 +452,6 @@ def controller():
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "df": {
-                            "type": "object",
-                            "description": "a large list of companies, with all of the relevant information about them. aquired from searching a website for companies"
-                        },
                         "n": {
                             "type": "number",
                             "description" : "the number of companies that we want remaining after refinement"
@@ -485,7 +462,6 @@ def controller():
                         }
                     },
                     "required": [
-                        "df",
                         "n",
                         "query"
                     ]
@@ -501,7 +477,7 @@ def controller():
                     "type": "object",
                     "properties": {
                         "query": {
-                            "type": "object",
+                            "type": "string",
                             "description": "short description of a company"
                         }
                     },
@@ -516,35 +492,16 @@ def controller():
             "function": {
                 "name": "rank",
                 "description": "rank the top 10 companies based on the found information",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "companies": {
-                            "type": "array",
-                            "items": {
-                                "type": "object"
-                            },
-                            "description": "list of dictionaries, each containing information about a company"
-                        }
-                    },
-                    "required": [
-                        "companies"
-                    ]
-                }
             }
         },
         {
             "type": "function",
             "function": {
                 "name": "outputCompanies",
-                "description": "takes a dataframe of companies and their detailed information, along with a list of indices, and outputs the website URL, name, description, founders and their background, funding and its background for each company at an index in the dataframe",
+                "description": "takes a set of companies and their detailed information, along with a list of indices, and outputs the website URL, name, description, founders and their background, funding and its background for each company at an index in the dataframe",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "companies": {
-                            "type": "object",
-                            "description": "all of the required detailed information for the companies to be outputed"
-                        },
                         "indices": {
                             "type": "array",
                             "items": {
@@ -555,7 +512,6 @@ def controller():
                         }
                     },
                     "required": [
-                        "companies",
                         "indices"
                     ]
                 }
@@ -594,20 +550,22 @@ def controller():
                     case "searchCrunchbaseCompanies":
                         #add the companies to the local arguments
                         local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
-                        function_response = f"{local_args["companies"].length} companies found"
+                        function_response = str(local_args["crunchbase_companies"].shape[0]) + " companies found."
                     case "searchCrunchbaseFounders": #LLM dosn't know the UUIDs, it will tell us which dataframe to find the founders for
-                        for row in function_args["df"]:
-                            row["founder_background"] = outputFounder(searchCrunchbaseFounder(row["founder"]))
-                        function_response = f"Founder backgrounds have been located"
+                        pass
+                        #TODO finish fixing founder search
+                        #local_args["crunchbase_companies"]["founder_background"] = local_args["crunchbase_companies"]["founder"].apply(lambda x: searchCrunchbaseFounder(x))
+                        #outputFounder(searchCrunchbaseFounder(row["founder"]))
+                        #function_response = "Founder backgrounds have been located"
                     case "refine":
-                        local_args.update({"refined_companies": refine(function_args["df"], function_args["n"], function_args["query"])})
-                        function_response = f"{local_args["refined_companies"].length} remaining"
+                        local_args.update({"refined_companies": refine(local_args["crunchbase_companies"], function_args["query"], function_args["n"])})
+                        function_response = str(local_args["refined_companies"].shape[0]) + " remaining"
                     case "chooseCategory":
                         function_response = str(chooseCategory(function_args["query"]))
                     case "rank":
-                        function_response = str(rank(function_args["companies"], function_args["query"], function_args["n"]))
+                        function_response = str(rank(local_args["refined_companies"], function_args["query"], function_args["n"]))
                     case "outputCompanies":
-                        outputCompanies(function_args["companies"], function_args["indices"])
+                        outputCompanies(local_args["refined_companies"], function_args["indices"])
                         function_response = "Outputting finished. Task complete."
 
                 #add the necessary function response to the messages for the next conversation
