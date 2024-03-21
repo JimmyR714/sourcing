@@ -43,7 +43,7 @@ def searchCrunchbaseCompanies(categories, n=50):
             "location_identifiers",
             "operating_status" #TODO founding date after 2021
         ],
-        "limit": n,
+        "limit": 100, #TODO change this
         "query": [
             {
                 "type": "predicate",
@@ -206,7 +206,7 @@ def refine(df, query, n=100):
 
 # Function to load the crunchbase categories from a file
 def loadCategories():
-    with open("permalinks.txt") as file:
+    with open("sourcing\permalinks.txt") as file:
         return [line.rstrip() for line in file]
 
 # Function that takes a query and returns crunchbase categories that most relate to that query
@@ -599,3 +599,5 @@ def controller():
                 )  
 
 controller()
+#df = pd.read_csv("embeddings.csv")
+#df["founder_background"] = df["founders"].apply(lambda x: list(map(outputFounder, list(map(searchCrunchbaseFounder, x)))if isinstance(x, list) else ["Not found"]))
