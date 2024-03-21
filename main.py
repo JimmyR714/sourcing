@@ -552,11 +552,10 @@ def controller():
                         local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
                         function_response = str(local_args["crunchbase_companies"].shape[0]) + " companies found."
                     case "searchCrunchbaseFounders": #LLM dosn't know the UUIDs, it will tell us which dataframe to find the founders for
-                        pass
+                        f = local_args["crunchbase_companies"]["founder"]
                         #TODO finish fixing founder search
-                        #local_args["crunchbase_companies"]["founder_background"] = local_args["crunchbase_companies"]["founder"].apply(lambda x: searchCrunchbaseFounder(x))
-                        #outputFounder(searchCrunchbaseFounder(row["founder"]))
-                        #function_response = "Founder backgrounds have been located"
+                        local_args["crunchbase_companies"]["founder_background"] = f.apply(lambda x: list(map(searchCrunchbaseFounder, x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(outputFounder, x)))
+                        function_response = "Founder backgrounds have been located"
                     case "refine":
                         local_args.update({"refined_companies": refine(local_args["crunchbase_companies"], function_args["query"], function_args["n"])})
                         function_response = str(local_args["refined_companies"].shape[0]) + " remaining"
