@@ -11,7 +11,7 @@ load_dotenv()
 
 CB_API_KEY = os.getenv("CB_API_KEY")
 
-MAX_FUNDING = 100000000
+MAX_FUNDING = 10000000
 client = OpenAI()
 
 # Function to get the embedding for some text. Primarily used for comparing with query
@@ -22,6 +22,7 @@ def get_embedding(text, model = "text-embedding-3-small"):
 # Function to search crunchbase for results related to a query
 # The query can consist of categories 
 # Returns a dataframe containing the companies found
+# TODO add more parameters to this function to make the search more customisable
 def searchCrunchbaseCompanies(categories, n=50):
     queryJSON = {
         "field_ids": [
@@ -41,9 +42,10 @@ def searchCrunchbaseCompanies(categories, n=50):
             "rank_delta_d90",
             "rank_org",
             "location_identifiers",
+            "founded_on",
             "operating_status" #TODO founding date after 2021
         ],
-        "limit": 100, #TODO change this
+        "limit": n, #TODO change this
         "query": [
             {
                 "type": "predicate",
@@ -73,7 +75,7 @@ def searchCrunchbaseCompanies(categories, n=50):
             #    "type": "predicate",
             #    "field_id": "founded_on",
             #    "operator_id": "gte",
-            #    "values": [{"precision": "year", "value": "2021"}] #founding date after 2021
+            #    "values": ["2021"] #founding date after 2021
             #}
         ],
         "order": [
@@ -116,6 +118,7 @@ def searchCrunchbaseCompanies(categories, n=50):
 
     master = pd.DataFrame()
     master["uuid"] = raw["uuid"]
+    master["founded_on"] = raw["properties.founded_on.value"]
     master["company"] = raw["properties.identifier.value"]
     master["description"] = raw["properties.short_description"]
     master["categories"] = raw["properties.categories"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
@@ -123,9 +126,10 @@ def searchCrunchbaseCompanies(categories, n=50):
     master["revenue"] = raw["properties.revenue_range"].map(revenue_range)
     master["website"] = raw["properties.website_url"]
     master["location"] = raw["properties.location_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
-    #master["funding"] = raw["properties.funding_total"] #TODO fix the bug where funding cannot be collected
+    master["funding"] = raw["properties.funding_total.value_usd"] #TODO fix the bug where funding cannot be collected
     master["funding_stage"] = raw["properties.funding_stage"]
-    master["founders"] = raw["properties.founder_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
+    master["founder_names"] = raw["properties.founder_identifiers"].apply(lambda x: list(map(itemgetter("value"), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
+    master["founder_uuids"] = raw["properties.founder_identifiers"].apply(lambda x: list(map(itemgetter('uuid'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
     master["investors"] = raw["properties.investor_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
     master["num_of_investors"] = raw["properties.num_investors"]
     master["rank_change_week"] = raw["properties.rank_delta_d7"]
@@ -138,10 +142,25 @@ def searchCrunchbaseCompanies(categories, n=50):
     #print(master.to_string())
     return master
 
+# Function that finds the founder backgrounds from a list of founder UUIDs
+def founderBackgrounds(founderUUIDList):
+    founderUUIDs = founderUUIDList.split(",")
+    founders = ""
+    for UUID in founderUUIDs:
+        founders += outputFounder(searchCrunchbaseFounder(UUID)) + ". "
+    return founders
+
 # Function that searches crunchbase for founders/investors given their uuid
 # Much more information can be acquired if necessary
-# returns a dataframe containing the information about the person
+# returns a json containing the information about the person
 def searchCrunchbaseFounder(founderUUID):
+    #attempt to retrieve the data
+    def attemptRetrieval(into, outOf):
+        try:
+            founder.update({into: raw[outOf].values[0]})
+        except:
+            founder.update({into: "Not Found"})
+
     # a lot more information could be added to each of these functions, but we need to be careful not to do too much or else
     # evaluating the quality will get expensive and detract from what we want LLM to look for
     def getDegree(d):
@@ -149,35 +168,43 @@ def searchCrunchbaseFounder(founderUUID):
 
     def getJob(j):
         return "Title: " + j["title"] + "; Employer: " + j["organization_identifier"] + "; Started: " + j["started_on.value"] + "; Finished: " + j["ended_on.value"]
-
+        
     def getCompany(c):
         return "Name: " + c["identifier.value"] + "; Description: " + c["short_description"] + "; Valuation: " + c["valuation"] + "; Status: " + c["status"]
-        #change valuation to funding ideally
+        #TODO change valuation to funding ideally
 
     url = f"https://api.crunchbase.com/api/v4/entities/people/{founderUUID}?user_key="+CB_API_KEY
     headers = {"accept": "application/json"}
 
-    r = requests.get(url=url, header=headers)
+    r = requests.get(url=url)
     result = json.loads(r.text) #JSON containing all information about the founder
 
     #clean the data
     raw = pd.json_normalize(result)
-    founder = pd.DataFrame()
-    founder["name"] = raw["properties.identifier.value"]
-    founder["gender"] = raw["properties.gender"]
-    founder["born_on"] = raw["properties.born_on"]
-    founder["degrees"] = raw["cards.degrees"].apply(lambda x: list(map(getDegree, x) if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
-    founder["location"] = raw["properties.location_identifiers"]
-    founder["jobs"] = raw["cards.jobs"].apply(lambda x: list(map(getJob, x) if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
-    founder["companies"] = raw["cards.founded_organizations"].apply(lambda x: list(map(getCompany, x) if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
+    founder = {}
+    attemptRetrieval("name", "properties.identifier.value")
+    attemptRetrieval("gender", "properties.gender")
+    attemptRetrieval("born_on", "properties.born_on")
+    attemptRetrieval("location", "properties.location_identifiers")
+    try:
+        founder.update({"degrees":raw["cards.degrees"].apply(lambda x: list(map(getDegree, x) if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))})
+    except:
+        founder.update({"degrees": "Not Found"})
+    try:
+        founder.update({"jobs": raw["cards.jobs"].apply(lambda x: list(map(getJob, x) if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))})
+    except:
+        founder.update({"jobs": "Not Found"})
+    try:
+        founder.update({"companies": raw["cards.founded_organizations"].apply(lambda x: list(map(getCompany, x) if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))})
+    except:
+        founder.update({"companies": "Not Found"})
 
     return founder
 
-# Function that takes a dataframe for a founder and formats it into a string
+# Function that takes a json for a founder and formats it into a string
 def outputFounder(founder):
-
-    return f"""Name: {founder["name"]}; Gender: {founder["gender"]}; Born on: {founder["born_on"]}; Located in: {founder["location"]}
-    Degrees: {founder["degrees"]}\nPrevious Jobs: {founder["jobs"]}\nPrevious Companies: {founder["companies"]}"""
+    return f"""Name: {founder["name"]}; Gender: {founder["gender"]}; Born on: {founder["born_on"]}; Located in: {founder["location"]};
+    Degrees: {founder["degrees"]}; Previous Jobs: {founder["jobs"]}; Previous Companies: {founder["companies"]}"""
 
 # Function that takes a dataframe of companies, a query, 
 # and reduces the dataframe to the n most relevant companies
@@ -300,7 +327,13 @@ def rank(companies, query, n=10):
         { #eventually, this will be filled with a CoT ReAct prompt
             "role": "user", 
             "content": 
-                "Q: The query is: " + query + "\nThe companies are:\n" + companies + "\n Let's think about this step by step, and have a good reason according to the evaluation points for each choice"
+                "Q: The query is: " + query + """\nThe companies are:\n
+                """ + companies[
+                    ["company", "description", "categories", "num_of_employees", "revenue", "location",
+                     "funding_stage"] #, "investors", "rank_change_week", "rank_change_month", "rank_change_quarter"
+                ].agg("; ".join, axis=1).to_string() + """
+                \n Let's think about this step by step, and have a good reason according to the evaluation points for each choice. 
+                We MUST return the numerical indices of our choices made, in a clear list at the end of our response."""
         }
     ]
 
@@ -313,11 +346,11 @@ def rank(companies, query, n=10):
 def outputCompanies(companies, indices):
     #assert(len(indices) <= 10)
     def outputCompany(company):
-        return company["company"] + "\n" + company["website"] + "\n" + company["description"] + "\n" + company["founder_info"] + "\n" + company["funding_info"] + "\n"
+        return company["company"] + "\n" + company["website"] + "\n" + company["description"] + "\n" + company["founder_backgrounds"] + "\n" + str(company["funding"]) + "\n"
     
     print("------------------------------------------------------------\n")
-    for index,rank in enumerate(indices):
-        print(f"{rank+1}.\n{outputCompany(companies[index])}\n------------------------------------------------------------\n")
+    for rank,index in enumerate(indices):
+        print(f"{rank+1}.\n{outputCompany(companies.iloc[index])}\n------------------------------------------------------------\n")
 
 # LLM that controls the flow of the program. Uses a crew of LLMs to decide what tools to use, 
 # complete different parts of the procedure, etc
@@ -340,7 +373,7 @@ def controller():
                     Your job is to find the top 10 companies related to this query.
                     You will do this in 6 stages:
                     1) Get all information needed to search the web, e.g. get the crunchbase categories related to the query so we can search crunchbase
-                    2) Search the web for 1000s of companies relating to the query, e.g. search crunchbase using the categories we just obtained
+                    2) Search the web for 1000s of companies relating to the query, e.g. search crunchbase using the categories we just obtained. You cannot do this at the same time as finding the categories.
                     3) Refine the set of companies down to around 100 using the information found and the query
                     4) Find all information relevant to our final 100 companies, including founder backgrounds
                     5) Rank the top 10 companies using all of the information found and the query
@@ -569,22 +602,30 @@ def controller():
                 match function_name:
                     case "searchCrunchbaseCompanies":
                         #add the companies to the local arguments
+                        print("Searching for companies on Crunchbase...")
                         #TODO there is a bug where this can be called on stage 1, and it guesses categories
                         local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
                         function_response = str(local_args["crunchbase_companies"].shape[0]) + " companies found."
-                    case "searchCrunchbaseFounders": #LLM dosn't know the UUIDs, it will tell us which dataframe to find the founders for
-                        f = local_args["refined_companies"]["founders"]
-                        local_args["refined_companies"]["founder_background"] = f.apply(lambda x: list(map(outputFounder, list(map(searchCrunchbaseFounder, x)))if isinstance(x, list) else ["Not found"]))
+                    case "searchCrunchbaseFounders": 
+                        print("Searching for founders on Crunchbase... [CURRENTLY BROKEN]")
+                        #TODO most crunchbase founders don't have their degree info on there, so this is currently non-functional
+                        local_args["refined_companies"]["founder_backgrounds"] = local_args["refined_companies"]["founder_names"]
+                        #f = local_args["refined_companies"]["founder_uuids"]
+                        #local_args["refined_companies"]["founder_background"] = f.apply(lambda x: founderBackgrounds(x))
                         function_response = "Founder backgrounds have been located"
                     case "refine":
+                        print("Refining Search...")
                         local_args.update({"refined_companies": refine(local_args["crunchbase_companies"], function_args["query"], function_args["n"])})
                         function_response = str(local_args["refined_companies"].shape[0]) + " remaining"
                     case "chooseCategory":
+                        print("Choosing categories...")
                         #TODO there is a bug where this can be called twice by LLM, and we lose initial results
                         function_response = str(chooseCategory(function_args["query"]))
                     case "rank":
+                        print("Ranking companies...")
                         function_response = str(rank(local_args["refined_companies"], function_args["query"], function_args["n"]))
                     case "outputCompanies":
+                        print("Outputting companies...")
                         outputCompanies(local_args["refined_companies"], function_args["indices"])
                         function_response = "Outputting finished. Task complete."
 
@@ -599,5 +640,3 @@ def controller():
                 )  
 
 controller()
-#df = pd.read_csv("embeddings.csv")
-#df["founder_background"] = df["founders"].apply(lambda x: list(map(outputFounder, list(map(searchCrunchbaseFounder, x)))if isinstance(x, list) else ["Not found"]))
