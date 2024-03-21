@@ -338,6 +338,7 @@ def rank(companies, query, n=10):
     ]
 
     response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages)
+    print(response.choices[0].message.content)
     return response
 
 # Function that takes a list of companies, each with their relevant company information and outputs the necessary information about each one
@@ -346,7 +347,8 @@ def rank(companies, query, n=10):
 def outputCompanies(companies, indices):
     #assert(len(indices) <= 10)
     def outputCompany(company):
-        return company["company"] + "\n" + company["website"] + "\n" + company["description"] + "\n" + company["founder_backgrounds"] + "\n" + str(company["funding"]) + "\n"
+        #TODO once the correct dataframe is passed to this function, ensure we use company["founder_backgrounds"] instead of names
+        return "Name: " + company["company"] + "\nWebsite: " + company["website"] + "\nDescription: " + company["description"] + "\nFounders: " + company["founder_names"] + "\nFunding: " + str(company["funding"]) + "\n"
     
     print("------------------------------------------------------------\n")
     for rank,index in enumerate(indices):
@@ -626,7 +628,8 @@ def controller():
                         function_response = str(rank(local_args["refined_companies"], function_args["query"], function_args["n"]))
                     case "outputCompanies":
                         print("Outputting companies...")
-                        outputCompanies(local_args["refined_companies"], function_args["indices"])
+                        #TODO fix bug where the indices refer to large dataframe, not refined one
+                        outputCompanies(local_args["crunchbase_companies"], function_args["indices"])
                         function_response = "Outputting finished. Task complete."
 
                 #add the necessary function response to the messages for the next conversation
