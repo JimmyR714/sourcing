@@ -302,13 +302,13 @@ def searchHackernews(query, n=100):
 def rank(companies, query, n=10):
     #ToT works well here
     #TODO ToT implementation can be much cleaner and more advanced here, this is only very basic to ensure evaluation is decent
-    company_info = companies.apply(lambda r: f"""
-        Name: {r.company}; Description: {r.description}; Categories: {r.categories}; Employees: {r.num_of_employees}; Revenue: {r.revenue};
-        Location: {r.location}; Funding: {str(r.funding.astype(int))}; Funding Stage: {r.funding_stage}; 
-        Number of Investors: {r.num_of_investors}; Top Investors: {str(r.investors)}; 
-        Weekly Rank Change: {str(r.rank_change_week)}; Monthly Rank Change: {str(r.rank_change_month)}; Quarterly Rank Change: {str(r.rank_change_quarter)};
-        Rank: {str(r.rank)}; Founders: {r.founder_backgrounds}
-        """).to_string()
+    company_info = companies.apply((lambda r: f"""
+        Name: {r["company"]}; Description: {r["description"]}; Categories: {r["categories"]}; Employees: {r["num_of_employees"]}; Revenue: {r["revenue"]};
+        Location: {r["location"]}; Funding: {str(r["funding"])}; Funding Stage: {r["funding_stage"]}; 
+        Number of Investors: {r["num_of_investors"]}; Top Investors: {str(r["investors"])}; 
+        Weekly Rank Change: {str(r["rank_change_week"])}; Monthly Rank Change: {str(r["rank_change_month"])}; Quarterly Rank Change: {str(r["rank_change_quarter"])};
+        Rank: {str(r["rank"])}; Founders: {r["founder_backgrounds"]}
+        """), axis=1).to_string()
     def thought():
         messages = [
             {
@@ -341,10 +341,8 @@ def rank(companies, query, n=10):
                     We MUST return the numerical indices of our choices made, in a clear list at the end of our response."""
             }
         ]
-
         response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages)
-        print(response.choices[0].message.content)
-    return response.choices[0].message.content
+        return response.choices[0].message.content
     
     messages = [
         {
