@@ -301,44 +301,105 @@ def searchHackernews(query, n=100):
 # Outputs the top n companies as a list of indices
 def rank(companies, query, n=10):
     #ToT works well here
+    #TODO ToT implementation can be much cleaner and more advanced here, this is only very basic to ensure evaluation is decent
+    company_info = companies.apply(lambda r: f"""
+        Name: {r.company}; Description: {r.description}; Categories: {r.categories}; Employees: {r.num_of_employees}; Revenue: {r.revenue};
+        Location: {r.location}; Funding: {str(r.funding.astype(int))}; Funding Stage: {r.funding_stage}; 
+        Number of Investors: {r.num_of_investors}; Top Investors: {str(r.investors)}; 
+        Weekly Rank Change: {str(r.rank_change_week)}; Monthly Rank Change: {str(r.rank_change_month)}; Quarterly Rank Change: {str(r.rank_change_quarter)};
+        Rank: {str(r.rank)}; Founders: {r.founder_backgrounds}
+        """).to_string()
+    def thought():
+        messages = [
+            {
+                "role": "system", 
+                "content": 
+                    f"""
+                    You are a helpful assistant that takes as input a set of companies. Your job is to 
+                    choose the {str(n)} most relevant companies according to the following criteria:
+                    1) The company must be relevant to the query
+                    2) Companies that have founders that are based in the US are better than those that don't
+                    3) Companies that have founders that have degrees from top-tier universities 
+                    e.g. Oxford, Cambridge, Harvard, Stanford, MIT, etc are better that those that don't
+                    4) Companies that have founders that have previously been employed by top-tier companies 
+                    e.g. Google, Amazon, Apple, Meta etc are better than those that don't
+                    5) Companies that have founders that have had previous entrepeneurial success
+                    e.g. founding a company with a high valuation, founding a company that has been acquired, etc
+                    are better than those that don't
+                    6) Companies that have a higher improvement over the last quarter, month and week are better
+                    7) Companies that have top-tier investors are better than those that don't
+                    You should evaulate the companies according to all criteria, with slightly more weight
+                    given to the higher criteria e.g. 1,2 than the lower ones.
+                    You should output the names of the top {str(n)} companies by descending rank as a list of integers.
+                    """
+            },
+            { #eventually, this will be filled with a CoT ReAct prompt
+                "role": "user", 
+                "content": 
+                    "Q: The query is: " + query + "\nThe companies are:\n" + company_info + """
+                    \n Let's think about this step by step, and have a good reason according to the evaluation points for each choice. 
+                    We MUST return the numerical indices of our choices made, in a clear list at the end of our response."""
+            }
+        ]
+
+        response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages)
+        return response.choices[0].message.content
+    
     messages = [
         {
-            "role": "system", 
-            "content": 
-                f"""
-                You are a helpful assistant that takes as input a set of companies. Your job is to 
-                choose the {str(n)} most relevant companies according to the following criteria:
-                1) The company must be relevant to the query
-                2) Companies that have founders that are based in the US are better than those that don't
-                3) Companies that have founders that have degrees from top-tier universities 
-                e.g. Oxford, Cambridge, Harvard, Stanford, MIT, etc are better that those that don't
-                4) Companies that have founders that have previously been employed by top-tier companies 
-                e.g. Google, Amazon, Apple, Meta etc are better than those that don't
-                5) Companies that have founders that have had previous entrepeneurial success
-                e.g. founding a company with a high valuation, founding a company that has been acquired, etc
-                are better than those that don't
-                6) Companies that have a higher improvement over the last quarter, month and week are better
-                7) Companies that have top-tier investors are better than those that don't
-                You should evaulate the companies according to all criteria, with slightly more weight
-                given to the higher criteria e.g. 1,2 than the lower ones.
-                You should output the names of the top {str(n)} companies by descending rank as a list of integers.
-                """
+            "role": "system",
+            "content":
+                """You are a helpful assistant that is able to evaluate a list of companies that relate to a query. 
+                You can perform a thought to acquire an evaluation of the companies. You should think at least 5 times.
+                After thinking, you will have the evaluations of certain companies, at which stage, you should choose the 10
+                that relate most to the query. Output the indices that relate to these 10 companies at the end."""
         },
-        { #eventually, this will be filled with a CoT ReAct prompt
-            "role": "user", 
-            "content": 
-                "Q: The query is: " + query + """\nThe companies are:\n
-                """ + companies[
-                    ["company", "description", "categories", "num_of_employees", "revenue", "location",
-                     "funding_stage"] #, "investors", "rank_change_week", "rank_change_month", "rank_change_quarter"
-                ].agg("; ".join, axis=1).to_string() + """
-                \n Let's think about this step by step, and have a good reason according to the evaluation points for each choice. 
-                We MUST return the numerical indices of our choices made, in a clear list at the end of our response."""
+        {
+            "role": "user",
+            "content": "Use thought() to perform thoughts. Don't output until you hav completed the thoughts. The query to relate the evaluations to is: " + query + """
+            ; The company information should not be evaluated here, but is provided so you can ensure that evaluations are correct. The company
+            information is as follows: """ + company_info + "Let's think about this step by step, and have a good reason for each choice."
         }
     ]
 
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "thought",
+                "description": "perform an evaluation of the companies. Returns the indices of the chosen companies along with an evaluation."
+            }
+        }
+    ]
+
+    response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages, tools=tools, tool_choice="auto",)
+    response_message = response.choices[0].message
+    tool_calls = response_message.tool_calls
+    if tool_calls:
+        for tool_call in tool_calls:
+            messages.append(
+                {
+                "tool_call_id": tool_call.id,
+                "role": "tool",
+                "name": "thought",
+                "content": thought(),
+                }
+            )
+
+    messages.append(
+        {
+            "role": "user",
+            "content": 
+            """
+            Now that you have done the thoughts, you must return the list of the 10 indices of companies that relate most to the query via their evaluations.
+            You should include an evaluation with each explaining why they seemed the most relevant to the query, and why you chose them.
+            Put the list of indices clearly at the end"""
+        }
+    )
+
     response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages)
-    return response
+    return response.choices[0].message.content
+
 
 # Function that takes a list of companies, each with their relevant company information and outputs the necessary information about each one
 # Input data contains all information
@@ -600,12 +661,14 @@ def controller():
 
                 #choose the correct function to call, and update variables where necessary
                 match function_name:
+
                     case "searchCrunchbaseCompanies":
                         #add the companies to the local arguments
                         print("Searching for companies on Crunchbase...")
                         #TODO there is a bug where this can be called on stage 1, and it guesses categories
                         local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
                         function_response = str(local_args["crunchbase_companies"].shape[0]) + " companies found."
+
                     case "searchCrunchbaseFounders": 
                         print("Searching for founders on Crunchbase... [CURRENTLY BROKEN]")
                         #TODO most crunchbase founders don't have their degree info on there, so this is currently non-functional
@@ -613,17 +676,21 @@ def controller():
                         #f = local_args["refined_companies"]["founder_uuids"]
                         #local_args["refined_companies"]["founder_background"] = f.apply(lambda x: founderBackgrounds(x))
                         function_response = "Founder backgrounds have been located"
+
                     case "refine":
                         print("Refining Search...")
                         local_args.update({"refined_companies": refine(local_args["crunchbase_companies"], function_args["query"], function_args["n"])})
                         function_response = str(local_args["refined_companies"].shape[0]) + " remaining"
+
                     case "chooseCategory":
                         print("Choosing categories...")
                         #TODO there is a bug where this can be called twice by LLM, and we lose initial results
                         function_response = str(chooseCategory(function_args["query"]))
+
                     case "rank":
                         print("Ranking companies...")
-                        function_response = str(rank(local_args["refined_companies"], function_args["query"], function_args["n"]))
+                        function_response = rank(local_args["refined_companies"], function_args["query"], function_args["n"])
+
                     case "outputCompanies":
                         print("Outputting companies...")
                         outputCompanies(local_args["refined_companies"], function_args["indices"])
