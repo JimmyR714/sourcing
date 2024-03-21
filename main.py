@@ -175,6 +175,7 @@ def searchCrunchbaseFounder(founderUUID):
 
 # Function that takes a dataframe for a founder and formats it into a string
 def outputFounder(founder):
+
     return f"""Name: {founder["name"]}; Gender: {founder["gender"]}; Born on: {founder["born_on"]}; Located in: {founder["location"]}
     Degrees: {founder["degrees"]}\nPrevious Jobs: {founder["jobs"]}\nPrevious Companies: {founder["companies"]}"""
 
@@ -200,6 +201,7 @@ def refine(df, query, n=100):
     df["embedding_distance"] = df["embedding"].apply(lambda x: abs(distance_from_embedding(query_embedding, x, distance_metric="cosine")))
     #choose the n most relevant companies
     refined = df.nsmallest(n, "embedding_distance")
+    refined.to_csv("embeddings.csv",  sep="\t", encoding="utf-8")
     return refined
 
 # Function to load the crunchbase categories from a file
@@ -497,6 +499,19 @@ def controller():
             "function": {
                 "name": "rank",
                 "description": "rank the top 10 companies based on the found information",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "the initial query that was asked, that we should be ranking the companies on"
+                        },
+                        "n":{
+                            "type": "number",
+                            "description": "the number of companies that should be in the top ranking"
+                        }
+                    }
+                }
             }
         },
         {
@@ -558,8 +573,8 @@ def controller():
                         local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
                         function_response = str(local_args["crunchbase_companies"].shape[0]) + " companies found."
                     case "searchCrunchbaseFounders": #LLM dosn't know the UUIDs, it will tell us which dataframe to find the founders for
-                        f = local_args["crunchbase_companies"]["founder"]
-                        local_args["crunchbase_companies"]["founder_background"] = f.apply(lambda x: list(map(searchCrunchbaseFounder, x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(outputFounder, x)))
+                        f = local_args["refined_companies"]["founders"]
+                        local_args["refined_companies"]["founder_background"] = f.apply(lambda x: list(map(outputFounder, list(map(searchCrunchbaseFounder, x)))if isinstance(x, list) else ["Not found"]))
                         function_response = "Founder backgrounds have been located"
                     case "refine":
                         local_args.update({"refined_companies": refine(local_args["crunchbase_companies"], function_args["query"], function_args["n"])})
