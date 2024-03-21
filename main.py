@@ -266,7 +266,7 @@ def searchHackernews(query, n=100):
 # This input data includes founder information
 # Outputs the top n companies as a list of indices
 def rank(companies, query, n=10):
-
+    #ToT works well here
     messages = [
         {
             "role": "system", 
@@ -549,17 +549,18 @@ def controller():
                 match function_name:
                     case "searchCrunchbaseCompanies":
                         #add the companies to the local arguments
+                        #TODO there is a bug where this can be called on stage 1, and it guesses categories
                         local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
                         function_response = str(local_args["crunchbase_companies"].shape[0]) + " companies found."
                     case "searchCrunchbaseFounders": #LLM dosn't know the UUIDs, it will tell us which dataframe to find the founders for
                         f = local_args["crunchbase_companies"]["founder"]
-                        #TODO finish fixing founder search
                         local_args["crunchbase_companies"]["founder_background"] = f.apply(lambda x: list(map(searchCrunchbaseFounder, x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(outputFounder, x)))
                         function_response = "Founder backgrounds have been located"
                     case "refine":
                         local_args.update({"refined_companies": refine(local_args["crunchbase_companies"], function_args["query"], function_args["n"])})
                         function_response = str(local_args["refined_companies"].shape[0]) + " remaining"
                     case "chooseCategory":
+                        #TODO there is a bug where this can be called twice by LLM, and we lose initial results
                         function_response = str(chooseCategory(function_args["query"]))
                     case "rank":
                         function_response = str(rank(local_args["refined_companies"], function_args["query"], function_args["n"]))
