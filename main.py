@@ -202,10 +202,15 @@ def refine(df, query, n=100):
     refined = df.nsmallest(n, "embedding_distance")
     return refined
 
+# Function to load the crunchbase categories from a file
+def loadCategories():
+    with open("permalinks.txt") as file:
+        return [line.rstrip() for line in file]
+
 # Function that takes a query and returns crunchbase categories that most relate to that query
 # Currently requires category list; may be difficult to adapt to work without the category list
 def chooseCategory(query):
-    categoryList = ["biotechnology", "gaming", "information-technology", "artificial-intelligence", "marketing", "consulting"] #this will be filled with the roughly 800 categories
+    categoryList = loadCategories()
     messages = [
         {
             "role": "system", 
