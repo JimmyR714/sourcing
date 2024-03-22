@@ -1,0 +1,82 @@
+------------------------------------------------------------
+1.
+Name: Agent AI
+Website: https://agentai.cloud
+Description: All-In-One AI Platform, Personalized AI Agents
+Founders: Orion Blakesley
+Funding: 850000
+Reason: While specific evaluations are not provided, this company is likely focused on AI agent frameworks or tools based on its name or description.
+------------------------------------------------------------
+2.
+Name: SynthFlow AI
+Website: https://synthflow.ai
+Description: Build AI Agents at Scale. No Coding Required.
+Founders: Hakob Astabatsyan
+Funding: 1584617
+Reason: While specific evaluations are not provided, this company is likely focused on AI agent frameworks or tools based on its name or description.
+------------------------------------------------------------
+3.
+Name: NeuralAgent
+Website: http://neuralagent.ai
+Description: Explainable AI-Agent Foundation Models for distributed autonomous intelligence
+Founders: Burak Uzman,Dr. Onur Deniz
+Funding: 0
+Reason: While specific evaluations are not provided, this company is likely focused on AI agent frameworks or tools based on its name or description.
+------------------------------------------------------------
+4.
+Name: PureCode AI
+Website: https://purecode.ai/
+Description: PureCode AI is a front-end developer tool where engineers can use text to describe and generate or customize software user interfaces.
+Founders: Edward Daniel
+Funding: 3000000
+Reason: While specific evaluations are not provided, this company is likely focused on AI agent frameworks or tools based on its name or description.
+------------------------------------------------------------
+5.
+Name: AITopTools
+Website: https://www.aitoptools.com
+Description: AITopTools is an AI tools directory website that offers a comprehensive and current list of AI tools available online.
+Founders: Michael Kleinman
+Funding: 135000
+Reason: While specific evaluations are not provided, this company is likely focused on AI agent frameworks or tools based on its name or description.
+------------------------------------------------------------
+6.
+Name: AI Box
+Website: https://aibox.ai
+Description: No-Code AI App Builder and Marketplace
+Founders: Ben Pierson,Jaeden Schafer,Jillian Schafer
+Funding: 0
+Reason: While specific evaluations are not provided, this company is likely focused on AI agent frameworks or tools based on its name or description.
+------------------------------------------------------------
+7.
+Name: ChainML
+Website: https://www.chainml.net
+Description: a comprehensive solution to integrate customizable generative AI into applications using production-grade AI agents.
+Founders: David Mueller,Ethan Jackson,Ron Bodkin
+Funding: 4000000
+Reason: While specific evaluations are not provided, this company is likely focused on AI agent frameworks or tools based on its name or description.
+------------------------------------------------------------
+8.
+Name: MagickML
+Website: https://magickml.com
+Description: AI Development Engine (AIDE) for advanced machine learning, prompt-chaining, and autonomous agents with full stack deployment.
+Founders: Jesse Alton,Michael Sharpe
+Funding: 500000
+Reason: While specific evaluations are not provided, this company is likely focused on AI agent frameworks or tools based on its name or description.
+------------------------------------------------------------
+9.
+Name: Inworld AI
+Website: https://inworld.ai
+Description: Inworld AI is a character engine for creating AI NPCs in games and interactive experiences.
+Founders: Ilya Gelfenbeyn,Kylan Gibbs,Michael Ermolenko
+Funding: 125700000
+Reason: While specific evaluations are not provided, this company is likely focused on AI agent frameworks or tools based on its name or description.
+------------------------------------------------------------
+10.
+Name: Open KX
+Website: http://www.openkx.wiki
+Description: An AI agent trained in business & technology to empower colaborators (+25 industries, +1.3k Business Drivers & +100k B2B assets).
+Founders: Gustavo Chavez
+Funding: 27000
+Reason: While specific evaluations are not provided, this company is likely focused on AI agent frameworks or tools based on its name or description.
+------------------------------------------------------------
+
