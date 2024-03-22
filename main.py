@@ -33,19 +33,19 @@ def searchCrunchbaseCompanies(categories, n=-1):
     def countCrunchbaseCompanies(query):
         url = "https://api.crunchbase.com/api/v4/searches/organizations?user_key=" + CB_API_KEY
         headers = {"accept": "application/json"}
-        r = requests.post(url=url, headers=headers, json = query)
+        r = requests.post(url=url, headers=headers, json = query | {"field_ids":["identifier"]})
         result = json.loads(r.text)
         total_companies = result["count"]
         return int(total_companies)
 
     # Function to extract companies from Crunchbase
-    def extractCompanies(m=1000):
-        r = requests.post(url=url, headers=headers, json=queryJSON)
+    def extractCompanies(m, raw):
+        r = requests.post(url=url, headers=headers, json=queryJSON | {"limit":m})
         result = json.loads(r.text) #JSON containing all companies from this query
 
         #clean the data
         normalized_raw = pd.json_normalize(result["entities"])
-        raw = raw.append(normalized_raw, ignore_index = True)
+        return pd.concat([raw, normalized_raw], ignore_index = True)
 
     # The search query
     query = {
@@ -111,7 +111,6 @@ def searchCrunchbaseCompanies(categories, n=-1):
             "founded_on",
             "operating_status" #TODO founding date after 2021
         ],
-        "limit": n, #TODO change this
         "order": [
             {
                 "field_id": "rank_org",
@@ -122,19 +121,19 @@ def searchCrunchbaseCompanies(categories, n=-1):
 
     url = "https://api.crunchbase.com/api/v4/searches/organizations?user_key="+CB_API_KEY
     headers = {"accept": "application/json"}
-    raw = pd.DataFrame()
 
+    raw = pd.DataFrame()
     #loop until we get limit companies
     data_acquired = 0
     while data_acquired < limit:
         if data_acquired != 0: #if we already searched for some companies
-            queryJSON["after_id"] = raw["uuid"][len(raw["uuid"]-1)]
+            queryJSON["after_id"] = raw["uuid"][len(raw["uuid"])-1]
         else:
             #pop after_id just in case it exists
             if "after_id" in queryJSON:
                 queryJSON = queryJSON.pop("after_id")
         #searches up to a maximum of 1000 companies
-        extractCompanies(min(1000, limit - data_acquired))
+        raw = extractCompanies(min(1000, limit - data_acquired), raw)
         data_acquired = len(raw["uuid"])
 
     revenue_range = {
@@ -729,11 +728,12 @@ def controller():
                         #TODO there is a bug where this can be called on stage 1, and it guesses categories - maybe fixed?
                         #try statement to catch this bug
                         try:
-                            local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
+                            #TODO change limit back to function_args["n"], this is for testing rn
+                            local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], -1)})
                             function_response = str(local_args["crunchbase_companies"].shape[0]) + " companies found."
                         except:
                             function_response = "Crunchbase Error - maybe LLM searched too early, or network is down?"
-                            print(function_response)
+                        print(function_response)
             
                     case "searchCrunchbaseFounders": 
                         print("Searching for founders on Crunchbase... [CURRENTLY BROKEN]")
