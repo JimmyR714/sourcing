@@ -710,7 +710,8 @@ def controller():
                         }
                     },
                     "required": [
-                        "indices"
+                        "indices",
+                        "evaluations"
                     ]
                 }
             }
