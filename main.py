@@ -7,11 +7,13 @@ import os
 from dotenv import load_dotenv
 from embeddings_utils import *
 
+#loads API key for crunchbase, TODO put your api key in a .env file
 load_dotenv()
-
 CB_API_KEY = os.getenv("CB_API_KEY")
 
-MAX_FUNDING = 10000000
+# Constants 
+EXPENSIVE_MODE = True #this will cost more to run. uses higher quality LLMs and does more calls to them too
+MAX_FUNDING = 10000000 #Can be asjusted manually here TODO have this be a parameter inputted by LLM to crunchbase search
 client = OpenAI()
 
 # Function to get the embedding for some text. Primarily used for comparing with query
@@ -19,33 +21,34 @@ def get_embedding(text, model = "text-embedding-3-small"):
     text = text.replace("\n", " ") #tidy text
     return client.embeddings.create(input = [text], model=model).data[0].embedding
 
-# Function to search crunchbase for results related to a query
-# The query can consist of categories 
+# Function to search crunchbase for results related to certain categories
+# The categories are permalinks on Crunchbase
+# n represents the number of items to find, n=-1 represents the maximum (all related companies)
 # Returns a dataframe containing the companies found
-# TODO add more parameters to this function to make the search more customisable
-def searchCrunchbaseCompanies(categories, n=50):
-    queryJSON = {
-        "field_ids": [
-            "identifier",
-            "short_description",
-            "categories",
-            "num_employees_enum",
-            "revenue_range",
-            "website_url",
-            "funding_total",
-            "funding_stage",
-            "founder_identifiers",
-            "investor_identifiers",
-            "num_investors",
-            "rank_delta_d7",
-            "rank_delta_d30",
-            "rank_delta_d90",
-            "rank_org",
-            "location_identifiers",
-            "founded_on",
-            "operating_status" #TODO founding date after 2021
-        ],
-        "limit": n, #TODO change this
+
+# TODO add more parameters to this function to make the search more customisable, although a warning for this is that
+# it is smart to use permalinks or uuids when searching for things like locations, mirror my method for categories if necessary
+def searchCrunchbaseCompanies(categories, n=-1):
+    # Function to count the number of Crunchbase companies that appear in a given category search
+    def countCrunchbaseCompanies(query):
+        url = "https://api.crunchbase.com/api/v4/searches/organizations?user_key=" + CB_API_KEY
+        headers = {"accept": "application/json"}
+        r = requests.post(url=url, headers=headers, json = query)
+        result = json.loads(r.text)
+        total_companies = result["count"]
+        return int(total_companies)
+
+    # Function to extract companies from Crunchbase
+    def extractCompanies(m=1000):
+        r = requests.post(url=url, headers=headers, json=queryJSON)
+        result = json.loads(r.text) #JSON containing all companies from this query
+
+        #clean the data
+        normalized_raw = pd.json_normalize(result["entities"])
+        raw = raw.append(normalized_raw, ignore_index = True)
+
+    # The search query
+    query = {
         "query": [
             {
                 "type": "predicate",
@@ -71,29 +74,68 @@ def searchCrunchbaseCompanies(categories, n=50):
                 "operator_id": "eq",
                 "values": ["active"] #active companies
             },
-            #{
-            #    "type": "predicate",
-            #    "field_id": "founded_on",
-            #    "operator_id": "gte",
-            #    "values": ["2021"] #founding date after 2021
-            #}
+            {
+                "type": "predicate",
+                "field_id": "founded_on",
+                "operator_id": "gte",
+                "values": [2021] #founding date after 2021
+            } #TODO ensure that this works
+        ]
+    }
+
+    #Find out how many companies we should find
+    if n == -1:
+        limit = countCrunchbaseCompanies(query)
+    else:
+        limit = n
+    
+    # The full JSON that we search with
+    queryJSON = {
+        "field_ids": [
+            "identifier",
+            "short_description",
+            "categories",
+            "num_employees_enum",
+            "revenue_range",
+            "website_url",
+            "funding_total",
+            "funding_stage",
+            "founder_identifiers",
+            "investor_identifiers",
+            "num_investors",
+            "rank_delta_d7",
+            "rank_delta_d30",
+            "rank_delta_d90",
+            "rank_org",
+            "location_identifiers",
+            "founded_on",
+            "operating_status" #TODO founding date after 2021
         ],
+        "limit": n, #TODO change this
         "order": [
             {
                 "field_id": "rank_org",
                 "sort": "asc"
             }
         ]
-    }
+    } | query
 
     url = "https://api.crunchbase.com/api/v4/searches/organizations?user_key="+CB_API_KEY
     headers = {"accept": "application/json"}
+    raw = pd.DataFrame()
 
-    r = requests.post(url=url, headers=headers, json=queryJSON)
-    result = json.loads(r.text) #JSON containing all companies from this query
-
-    #clean the data
-    raw = pd.json_normalize(result["entities"])
+    #loop until we get limit companies
+    data_acquired = 0
+    while data_acquired < limit:
+        if data_acquired != 0: #if we already searched for some companies
+            queryJSON["after_id"] = raw["uuid"][len(raw["uuid"]-1)]
+        else:
+            #pop after_id just in case it exists
+            if "after_id" in queryJSON:
+                queryJSON = queryJSON.pop("after_id")
+        #searches up to a maximum of 1000 companies
+        extractCompanies(min(1000, limit - data_acquired))
+        data_acquired = len(raw["uuid"])
 
     revenue_range = {
     "r_00000000": "Less than $1M",
@@ -203,8 +245,19 @@ def searchCrunchbaseFounder(founderUUID):
 
 # Function that takes a json for a founder and formats it into a string
 def outputFounder(founder):
-    return f"""Name: {founder["name"]}; Gender: {founder["gender"]}; Born on: {founder["born_on"]}; Located in: {founder["location"]};
-    Degrees: {founder["degrees"]}; Previous Jobs: {founder["jobs"]}; Previous Companies: {founder["companies"]}"""
+    #we use this function to avoid a messy output full of "Not Found"
+    def attemptAdd(title, type):
+        content = founder[type]
+        if content != "Not Found":
+            output += title + ": " + content + "; "
+    
+    attemptAdd("Name", "name")
+    attemptAdd("Gender", "gender")
+    attemptAdd("Born on", "born_on")
+    attemptAdd("Located in", "location")
+    attemptAdd("Degrees", "degrees")
+    attemptAdd("Previous Jobs", "jobs")
+    attemptAdd("Previous Companies", "companies")
 
 # Function that takes a dataframe of companies, a query, 
 # and reduces the dataframe to the n most relevant companies
@@ -219,7 +272,12 @@ def refine(df, query, n=100):
         #"; Employees: " + df["num_of_employees"].str.strip() #more info could be added, but may distract LLM
         #include investor names, founder background (possibly at a later stage)
         )
-    df["embedding"] = df["pre-embedding"].apply(lambda x: get_embedding(x, model='text-embedding-3-small'))
+    
+    if EXPENSIVE_MODE:
+        model = "text-embedding-3-large"
+    else:
+        model = "text-embedding-3-small"
+    df["embedding"] = df["pre-embedding"].apply(lambda x: get_embedding(x, model=model))
 
     #get the embedding for the query
     query_embedding = get_embedding(query)
@@ -331,6 +389,7 @@ def rank(companies, query, n=10):
                     You should evaulate the companies according to all criteria, with slightly more weight
                     given to the higher criteria e.g. 1,2 than the lower ones.
                     You should output the names of the top {str(n)} companies by descending rank as a list of integers.
+                    The index related to each company should be their position within this table, out of 100.
                     """
             },
             { #eventually, this will be filled with a CoT ReAct prompt
@@ -407,7 +466,7 @@ def outputCompanies(companies, indices):
     #assert(len(indices) <= 10)
     def outputCompany(company):
         #TODO once the correct dataframe is passed to this function, ensure we use company["founder_backgrounds"] instead of names
-        return "Name: " + company["company"] + "\nWebsite: " + company["website"] + "\nDescription: " + company["description"] + "\nFounders: " + company["founder_names"] + "\nFunding: " + str(company["funding"]) + "\n"
+        return "Name: " + company["company"] + "\nWebsite: " + company["website"] + "\nDescription: " + company["description"] + "\nFounders: " + company["founder_backgrounds"] + "\nFunding: " + str(company["funding"]) + "\n"
     
     print("------------------------------------------------------------\n")
     for rank,index in enumerate(indices):
@@ -651,7 +710,7 @@ def controller():
         #check for function calls at this stage
         tool_calls = response_message.tool_calls
         if tool_calls: #if there was a function call
-            #TODO error handling for invalid JSONs
+            #TODO error handling for invalid JSONs - in all my testing, no invalid JSONs have appeared
             messages.append(response_message)  #extend conversation with assistant's reply
 
             # for each function call, we run the function
@@ -665,10 +724,15 @@ def controller():
                     case "searchCrunchbaseCompanies":
                         #add the companies to the local arguments
                         print("Searching for companies on Crunchbase...")
-                        #TODO there is a bug where this can be called on stage 1, and it guesses categories
-                        local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
-                        function_response = str(local_args["crunchbase_companies"].shape[0]) + " companies found."
-
+                        #TODO there is a bug where this can be called on stage 1, and it guesses categories - maybe fixed?
+                        #try statement to catch this bug
+                        try:
+                            local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
+                            function_response = str(local_args["crunchbase_companies"].shape[0]) + " companies found."
+                        except:
+                            function_response = "Crunchbase Error - maybe LLM searched too early, or network is down?"
+                            print(function_response)
+            
                     case "searchCrunchbaseFounders": 
                         print("Searching for founders on Crunchbase... [CURRENTLY BROKEN]")
                         #TODO most crunchbase founders don't have their degree info on there, so this is currently non-functional
@@ -684,7 +748,6 @@ def controller():
 
                     case "chooseCategory":
                         print("Choosing categories...")
-                        #TODO there is a bug where this can be called twice by LLM, and we lose initial results
                         function_response = str(chooseCategory(function_args["query"]))
 
                     case "rank":
@@ -693,8 +756,8 @@ def controller():
 
                     case "outputCompanies":
                         print("Outputting companies...")
-                        #TODO fix bug where the indices refer to large dataframe, not refined one
-                        outputCompanies(local_args["crunchbase_companies"], function_args["indices"])
+                        #TODO fix bug where the indices refer to large dataframe, not refined one - maybe fixed?
+                        outputCompanies(local_args["refined_companies"], function_args["indices"])
                         function_response = "Outputting finished. Task complete."
 
                 #add the necessary function response to the messages for the next conversation
