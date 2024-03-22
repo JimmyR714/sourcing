@@ -1,3 +1,6 @@
+This documents the 100 companies found by the embedding stage of LLM.
+From Wednesday, has since been improved.
+
 PureCode AI is a front-end developer tool where engineers can use text to describe an...ate or customize software user interfaces.
 aiXplain is a no-code low-code AI IDE and a marketplace for small and medium enterpri... Large Language Models, GPT, Multimodal AI
 Build AI Agents at Scale. No Coding Required.

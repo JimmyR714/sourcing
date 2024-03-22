@@ -184,6 +184,7 @@ def searchCrunchbaseCompanies(categories, n=-1):
     return master
 
 # Function that finds the founder backgrounds from a list of founder UUIDs
+# TODO Currently uses crunchbase which has almost no information, but can be easily adjusted to use another API with more info on people
 def founderBackgrounds(founderUUIDList):
     founderUUIDs = founderUUIDList.split(",")
     founders = ""
@@ -334,6 +335,8 @@ def chooseCategory(query):
     response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages)
     return response.choices[0].message.content
 
+
+#TODO implement the following searching tools 
 # Function to search github for results related to a query
 # q is a carefully formatted query
 # Returns a list of length n containing companies that match the query
@@ -415,7 +418,7 @@ def rank(companies, query, n=10):
             "role": "user",
             "content": "Use thought() to perform thoughts. Don't output until you hav completed the thoughts. The query to relate the evaluations to is: " + query + """
             ; The company information should not be evaluated here, but is provided so you can ensure that evaluations are correct. The company
-            information is as follows: """ + company_info + "Let's think about this step by step, and have a good reason for each choice."
+            information is as follows: """ + company_info
         }
     ]
 
@@ -451,7 +454,7 @@ def rank(companies, query, n=10):
             """
             Now that you have done the thoughts, you must return the list of the 10 indices of companies that relate most to the query via their evaluations.
             You should include an evaluation with each explaining why they seemed the most relevant to the query, and why you chose them.
-            Put the list of indices clearly at the end. Do not perform any more thoughts!"""
+            Put the list of indices clearly at the end. Do not perform any more thoughts! Let's think about this step by step, and have a good reason for each choice."""
         }
     )
 
@@ -459,19 +462,19 @@ def rank(companies, query, n=10):
     response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages, tools=tools, tool_choice = "auto")
     return response.choices[0].message.content
 
-
 # Function that takes a list of companies, each with their relevant company information and outputs the necessary information about each one
 # Input data contains all information
 # Much more could be returned right now
-def outputCompanies(companies, indices):
+def outputCompanies(companies, indices, evaluations):
     #assert(len(indices) <= 10)
     def outputCompany(company):
         #TODO once the correct dataframe is passed to this function, ensure we use company["founder_backgrounds"] instead of names
-        return "Name: " + company["company"] + "\nWebsite: " + company["website"] + "\nDescription: " + company["description"] + "\nFounders: " + company["founder_backgrounds"] + "\nFunding: " + str(company["funding"]) + "\n"
+        return "Name: " + company["company"] + "\nWebsite: " + company["website"] + "\nDescription: " + company["description"] + """
+        Founders: """ + company["founder_backgrounds"] + "\nFunding: " + str(company["funding"]) + "\n"
     
     print("------------------------------------------------------------\n")
     for rank,index in enumerate(indices):
-        print(f"{rank+1}.\n{outputCompany(companies.iloc[index])}\n------------------------------------------------------------\n")
+        print(f"{rank+1}.\n{outputCompany(companies.iloc[index]) + "Reason: " + evaluations[rank]}\n------------------------------------------------------------\n")
 
 # LLM that controls the flow of the program. Uses a crew of LLMs to decide what tools to use, 
 # complete different parts of the procedure, etc
@@ -528,10 +531,18 @@ def controller():
 
                     Thought 5: Now that I have the more in depth information, I need to rank each of the companies to find the top 10. 
                     Act 5: rank("blockchain investment companies", n=10)
-                    Observation 5: The top 10 companies are stored at indices [4,1,9,39,12,43,99,64,70,71]
+                    Observation 5: The top 10 companies are stored at indices [4,1,9,39,12,43,99,64,70,71]. The reasons for each one are as follows:
+                    - This company has a high rank on crunchbase, and is a blockchain investment company
+                    - They perform research into blockchain technology and invest in cryptocurrency
+                    ...
+                    - They have founders with valuable backgrounds and invest in blockchain technology.
 
                     Thought 6: I have the top 10 companies, I just need to output them
-                    Act 6: outputCompanies([4,1,9,39,12,43,99,64,70,71])
+                    Act 6: outputCompanies([4,1,9,39,12,43,99,64,70,71], 
+                    ["This company has a high rank on crunchbase, and is a blockchain investment company",
+                    "They perform research into blockchain technology and invest in cryptocurrency", 
+                    ...
+                    "They have founders with valuable backgrounds and invest in blockchain technology."])
                     Observation 6: Outputting finished. Task complete.
 
                     Q: Give me the top 10 indie game development companies
@@ -558,10 +569,15 @@ def controller():
 
                     Thought 5: Now that I have the more in depth information, I need to rank each of the companies to find the top 10. 
                     Act 5: rank("indie game development", n=10)
-                    Observation 5: The top 10 companies are stored at indices [61, 21, 34, 5, 72, 87, 20, 29, 71, 2]
+                    Observation 5: The top 10 companies are stored at indices [61, 21, 34, 5, 72, 87, 20, 29, 71, 2]. The reasons are:
+                    - This company has been very successful recently, and their founders are based in LA.
+                    - They have made many successful indie games
+                    ...
+                    - The founders live in LA, and they have high-value investors
 
                     Thought 6: I have the top 10 companies, I just need to output them
-                    Act 6: outputCompanies([61, 21, 34, 5, 72, 87, 20, 29, 71, 2])
+                    Act 6: outputCompanies([61, 21, 34, 5, 72, 87, 20, 29, 71, 2], ["This company has been very successful recently, and their founders are based in LA.",
+                    "They have made many successful indie games", ... "The founders live in LA, and they have high-value investors"])
                     Observation 6: Outputting finished. Task complete.
         
                     Q: 
@@ -683,6 +699,14 @@ def controller():
                                 "description": "an index in the dataframe"
                             },
                             "description": "the list of indices of the companies to be outputted"
+                        },
+                        "evaluations": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "description": "an evaluation of a company"
+                            },
+                            "description": "the list of evaluations of companies that was returned from ranking the companies"
                         }
                     },
                     "required": [
@@ -739,8 +763,11 @@ def controller():
                         print("Searching for founders on Crunchbase... [CURRENTLY BROKEN]")
                         #TODO most crunchbase founders don't have their degree info on there, so this is currently non-functional
                         local_args["refined_companies"]["founder_backgrounds"] = local_args["refined_companies"]["founder_names"]
-                        #f = local_args["refined_companies"]["founder_uuids"]
+
+                        #old code that searches crunchbase, but not enough info on there
+                        #f = local_args["refined_companies"]["founder_uuids"] 
                         #local_args["refined_companies"]["founder_background"] = f.apply(lambda x: founderBackgrounds(x))
+
                         function_response = "Founder backgrounds have been located"
 
                     case "refine":
