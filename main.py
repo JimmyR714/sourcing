@@ -168,7 +168,7 @@ def searchCrunchbaseCompanies(categories, n=-1):
     master["revenue"] = raw["properties.revenue_range"].map(revenue_range)
     master["website"] = raw["properties.website_url"]
     master["location"] = raw["properties.location_identifiers"].apply(lambda x: list(map(itemgetter('value'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
-    master["funding"] = raw["properties.funding_total.value_usd"] #TODO fix the bug where funding cannot be collected
+    master["funding"] = raw["properties.funding_total.value_usd"]
     master["funding_stage"] = raw["properties.funding_stage"]
     master["founder_names"] = raw["properties.founder_identifiers"].apply(lambda x: list(map(itemgetter("value"), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
     master["founder_uuids"] = raw["properties.founder_identifiers"].apply(lambda x: list(map(itemgetter('uuid'), x)if isinstance(x, list) else ["Not found"])).apply(lambda x : ",".join(map(str, x)))
@@ -433,6 +433,7 @@ def rank(companies, query, n=10):
     response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages, tools=tools, tool_choice="auto",)
     response_message = response.choices[0].message
     tool_calls = response_message.tool_calls
+    messages.append(response_message)  #extend conversation with assistant's reply
     if tool_calls:
         for tool_call in tool_calls:
             messages.append(
@@ -451,11 +452,12 @@ def rank(companies, query, n=10):
             """
             Now that you have done the thoughts, you must return the list of the 10 indices of companies that relate most to the query via their evaluations.
             You should include an evaluation with each explaining why they seemed the most relevant to the query, and why you chose them.
-            Put the list of indices clearly at the end"""
+            Put the list of indices clearly at the end. Do not perform any more thoughts!"""
         }
     )
 
-    response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages)
+    #TODO save the evaluation for output
+    response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages, tools=tools, tool_choice = "auto")
     return response.choices[0].message.content
 
 

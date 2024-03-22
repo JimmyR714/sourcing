@@ -1,0 +1,93 @@
+This is the output when MAX_FUNDING is raised a lot
+
+------------------------------------------------------------
+
+1.
+Name: Rasa
+Website: https://rasa.com
+Description: Rasa provides an open platform for generative conversational AI, enabling the creation and deployment of advanced AI assistants. 
+Founders: Alan Nichol,Alex Weidauer
+Funding: 70217952
+
+------------------------------------------------------------
+
+2.
+Name: C3 AI
+Website: https://c3.ai
+Description: C3 AI is a provider of Enterprise AI software for accelerating digital transformation.
+Founders: Patricia House,Thomas Siebel
+Funding: 228478587
+
+------------------------------------------------------------
+
+3.
+Name: OpenDialog AI
+Website: https://opendialog.ai
+Description: OpenDialog AI is a conversational AI platform designed to assist enterprises in creating personalized AI chatbots and digital assistants.
+Founders: Dean Chapman,Ronald Ashri,Terry Walby
+Funding: 13003535
+
+------------------------------------------------------------
+
+4.
+Name: Scale AI
+Website: https://scale.com
+Description: Scale AI is the data platform for AI, providing training data for leading machine learning teams.
+Founders: Alexandr Wang,Lucy Guo
+Funding: 602620000
+
+------------------------------------------------------------
+
+5.
+Name: Kore.ai
+Website: https://kore.ai
+Description: Kore.ai offers AI-powered virtual assistants and applications for enhancing customer and employee experiences across various industries.
+Founders: Raj Koneru
+Funding: 223500000
+
+------------------------------------------------------------
+
+6.
+Name: Clarifai
+Website: https://clarifai.com/
+Description: Clarifai's platform supports the full AI development lifecycle; including dataset preparation, model training and deployment.    
+Founders: Matthew Zeiler
+Funding: 100000000
+
+------------------------------------------------------------
+
+7.
+Name: Hume AI
+Website: https://hume.ai
+Description: The AI toolkit to measure, understand, and improve how technology affects human emotion.
+Founders: Alan Cowen
+Funding: 17700000
+
+------------------------------------------------------------
+
+8.
+Name: Voiceflow
+Website: https://voiceflow.com
+Description: The collaborative platform to build conversational AI.
+Founders: Andrew Lawrence,Braden Ream,Michael Hood,Tyler Han
+Funding: 39000000
+
+------------------------------------------------------------
+
+9.
+Name: Element AI
+Website: http://www.elementai.com
+Description: Element AI is an artificial intelligence company that gives organizations access to technology.
+Founders: Anne Martel,Gabriel Duford,Jean-Francois Gagne,Jean-Sebastian Cournoyer,Nicolas Chapados,Philippe Beaudoin,Yoshua Bengio
+Funding: 257483994
+
+------------------------------------------------------------
+
+10.
+Name: Landing AI
+Website: https://www.landing.ai/
+Description: Landing AI applies AI and deep learning to help manufacturers solve challenging visual inspection problems and generate business value.
+Founders: Andrew Ng
+Funding: 57000000
+
+------------------------------------------------------------

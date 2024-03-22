@@ -1,0 +1,93 @@
+Find me the top 10 biotechnology companies that are currently researching vaccines
+
+------------------------------------------------------------
+
+1.
+Name: Vir Biotechnology
+Website: http://www.vir.bio
+Description: Vir Biotechnology is an immunology company that develops products to treat and prevent infectious diseases and other serious conditions.
+Founders: Klaus Frueh,Louis Picker,Robert Nelsen
+Funding: 908600000
+
+------------------------------------------------------------
+
+2.
+Name: Vaccinex
+Website: http://www.vaccinex.com/
+Description: Vaccinex is a biotechnology company engaged in the development of novel therapeutic antibodies for neurodegenerative disorders and oncology.
+Founders: Maurice Zauderer,Steven Cobourn
+Funding: 79199915
+
+------------------------------------------------------------
+
+3.
+Name: Oxford BioMedica
+Website: https://oxb.com
+Description: Oxford BioMedica is a pioneer of gene and cell therapy, with a leading industry position in lentiviral vector and cell therapy research.
+Founders: Alan Kingsman,Susan Kingsman
+Funding: 157049120
+
+------------------------------------------------------------
+
+4.
+Name: Kite Pharma
+Website: http://www.kitepharma.com
+Description: Kite Pharma is a development-stage biotechnology company designing and developing immune-based therapies to treat cancer indications.
+Founders: Arie Belldegrun,Joshua Kazam
+Funding: 335375000
+
+------------------------------------------------------------
+
+5.
+Name: Merck
+Website: http://www.merck.com
+Description: Merck is a biopharmaceutical company that offers medicines and vaccines for various diseases.
+Founders: George W. Merck
+Funding: 5586000
+
+------------------------------------------------------------
+
+6.
+Name: AbCellera
+Website: https://www.abcellera.com
+Description: AbCellera is an antibody discovery and development company that develops antibody therapeutics to improve patient outcomes.      
+Founders: Carl Hansen,Kevin Heyries,Véronique Lecault
+Funding: 886981407
+
+------------------------------------------------------------
+
+7.
+Name: Generate Biomedicines
+Website: https://generatebiomedicines.com
+Description: Generate Biomedicines is a biotechnological company focusing on creating breakthrough medicines.
+Founders: Avak Kahvejian,Geoffrey von Maltzahn,Gevorg Grigoryan,Molly Gibson,Noubar Afeyan,Sophie de Boer
+Funding: 693000000
+
+------------------------------------------------------------
+
+8.
+Name: Immunome
+Website: https://immunome.com
+Description: Immunome is a biotechnology company that specializes in immunotherapy, biotechnology, and antigen discovery.
+Founders: Scott Dessain
+Funding: 448854487
+
+------------------------------------------------------------
+
+9.
+Name: Beam Therapeutics
+Website: https://beamtx.com
+Description: Beam Therapeutics is a biotechnology company developing precision genetic medicines through the use of base editing technology.  
+Founders: David R. Liu,Feng Zhang,J. Keith Joung
+Funding: 689000000
+
+------------------------------------------------------------
+
+10.
+Name: Sana Biotechnology
+Website: http://sana.com/
+Description: Sana Biotechnology is a developer of engineered cells intended to be used as medicine for patients.
+Founders: Geoffrey von Maltzahn,Jack Milwid,Jacob Rubens,Michael Mee,Sonja Schrepfer,Steve Harr
+Funding: 865000000
+
+------------------------------------------------------------

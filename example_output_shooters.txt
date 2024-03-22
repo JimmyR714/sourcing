@@ -1,0 +1,91 @@
+------------------------------------------------------------
+
+1.
+Name: Certain Affinity
+Website: http://www.certainaffinity.com/
+Description: The goal of creating innovative, top-quality action games.
+Founders: Max Hoberman
+Funding: 15000000
+
+------------------------------------------------------------
+
+2.
+Name: Blind Squirrel Games
+Website: http://blindsquirrelentertainment.com
+Description: Blind Squirrel Games is a computer games company specializing in video game development services.
+Founders: Brad Hendricks
+Funding: 5000000
+
+------------------------------------------------------------
+
+3.
+Name: ProbablyMonsters
+Website: http://www.probablymonsters.com
+Description: ProbablyMonsters builds AAA video game studios and interactive entertainment.
+Founders: Harold Ryan
+Funding: 218800000
+
+------------------------------------------------------------
+
+4.
+Name: SuperTeam Games
+Website: https://www.superteamgames.com/
+Description: SuperTeam Games is is creating a new breed of sports games.
+Founders: Not found
+Funding: 10000000
+
+------------------------------------------------------------
+
+5.
+Name: Redhill Games
+Website: https://www.redhillgames.com/
+Description: Redhill Games are a free to play PC game studio formed by a team of industry veterans.
+Founders: Milos Jerabek
+Funding: 30000000
+
+------------------------------------------------------------
+
+6.
+Name: Phoenix Labs
+Website: https://phxlabs.ca
+Description: Phoenix Labs crafts a new AAA multiplayer experience for players to create lasting, memorable relationships for years to come.   
+Founders: Jesse Houston,Robin Mayne,Sean Bender
+Funding: 3518500
+
+------------------------------------------------------------
+
+7.
+Name: Shrapnel
+Website: https://www.shrapnel.com/
+Description: Shrapnel is an AAA Extraction FPS powered by next-gen community-driven tools, built on the blockchain to offer true ownership.   
+Founders: Calvin Zhou,Edmund Shern,Herbert Taylor,Mark Long,Naomi Lackaff
+Funding: 20600000
+
+------------------------------------------------------------
+
+8.
+Name: Velan Studios
+Website: http://www.velanstudios.com
+Description: Velan Studios is a new development studio made up of a diverse team of game industry veterans.
+Founders: Karthik Bala
+Funding: 7000000
+
+------------------------------------------------------------
+
+9.
+Name: Singularity 6
+Website: https://www.singularity6.com
+Description: Singularity 6 is a game development studio dedicated to the idea that games can create deeper, more meaningful experiences.      
+Founders: Aidan Karabaich,Anthony Leung
+Funding: 49000000
+
+------------------------------------------------------------
+
+10.
+Name: Mythical Games
+Website: https://mythicalgames.com
+Description: Mythical Games is a video game engine for player-owned economies.
+Founders: Cameron Thacker,Chris Downs,Jamie Jackson,Rudy Koch
+Funding: 297000000
+
+------------------------------------------------------------
