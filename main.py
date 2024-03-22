@@ -280,7 +280,7 @@ def refine(df, query, n=100):
     df["embedding"] = df["pre-embedding"].apply(lambda x: get_embedding(x, model=model))
 
     #get the embedding for the query
-    query_embedding = get_embedding(query)
+    query_embedding = get_embedding(query,model=model)
 
     #find relevance of companies
     df["embedding_distance"] = df["embedding"].apply(lambda x: abs(distance_from_embedding(query_embedding, x, distance_metric="cosine")))
@@ -379,16 +379,18 @@ def rank(companies, query, n=10):
                     You are a helpful assistant that takes as input a set of companies. Your job is to 
                     choose the {str(n)} most relevant companies according to the following criteria:
                     1) The company must be relevant to the query
-                    2) Companies that have founders that are based in the US are better than those that don't
-                    3) Companies that have founders that have degrees from top-tier universities 
+                    2) The company must be big enough, e.g. a decent number of employees or a decent amount of funding, 
+                    or a few investors. We don't want very small companies
+                    3) Companies that have founders that are based in the US are better than those that don't
+                    4) Companies that have founders that have degrees from top-tier universities 
                     e.g. Oxford, Cambridge, Harvard, Stanford, MIT, etc are better that those that don't
-                    4) Companies that have founders that have previously been employed by top-tier companies 
+                    5) Companies that have founders that have previously been employed by top-tier companies 
                     e.g. Google, Amazon, Apple, Meta etc are better than those that don't
-                    5) Companies that have founders that have had previous entrepeneurial success
+                    6) Companies that have founders that have had previous entrepeneurial success
                     e.g. founding a company with a high valuation, founding a company that has been acquired, etc
                     are better than those that don't
-                    6) Companies that have a higher improvement over the last quarter, month and week are better
-                    7) Companies that have top-tier investors are better than those that don't
+                    7) Companies that have a higher improvement over the last quarter, month and week are better
+                    8) Companies that have top-tier investors are better than those that don't
                     You should evaulate the companies according to all criteria, with slightly more weight
                     given to the higher criteria e.g. 1,2 than the lower ones.
                     You should output the names of the top {str(n)} companies by descending rank as a list of integers.
@@ -790,12 +792,11 @@ def outputCompanies(companies, indices, evaluations):
     #assert(len(indices) <= 10)
     def outputCompany(company):
         #TODO once the correct dataframe is passed to this function, ensure we use company["founder_backgrounds"] instead of names
-        return "Name: " + company["company"] + "\nWebsite: " + company["website"] + "\nDescription: " + company["description"] + """
-        Founders: """ + company["founder_backgrounds"] + "\nFunding: " + str(company["funding"]) + "\n"
+        return "Name: " + company["company"] + "\nWebsite: " + company["website"] + "\nDescription: " + company["description"] + "\nFounders: " + company["founder_names"] + "\nFunding: " + str(company["funding"]) + "\n"
     
-    print("------------------------------------------------------------\n")
+    print("------------------------------------------------------------")
     for rank,index in enumerate(indices):
-        print(f"{rank+1}.\n{outputCompany(companies.iloc[index]) + "Reason: " + evaluations[rank]}\n------------------------------------------------------------\n")
+        print(f"{rank+1}.\n{outputCompany(companies.iloc[index])}Reason: {evaluations[rank]}\n------------------------------------------------------------")
 
 # LLM that controls the flow of the program. Uses a crew of LLMs to decide what tools to use, 
 # complete different parts of the procedure, etc
@@ -1107,8 +1108,8 @@ def controller():
 
                     case "outputCompanies":
                         print("Outputting companies...")
-                        #TODO fix bug where the indices refer to large dataframe, not refined one - maybe fixed?
-                        outputCompanies(local_args["refined_companies"], function_args["indices"])
+                        #TODO fix bug where the indices refer to large dataframe, not refined one 
+                        outputCompanies(local_args["crunchbase_companies"], function_args["indices"], function_args["evaluations"])
                         function_response = "Outputting finished. Task complete."
 
                 #add the necessary function response to the messages for the next conversation

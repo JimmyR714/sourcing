@@ -1,0 +1,91 @@
+------------------------------------------------------------
+
+1.
+Name: Open KX
+Website: http://www.openkx.wiki
+Description: An AI agent trained in business & technology to empower colaborators (+25 industries, +1.3k Business Drivers & +100k B2B assets).
+        Founders: Gustavo Chavez
+Funding: 27000
+Reason: Open KX is mentioned across multiple evaluations as an AI agent framework, directly corresponding to the query, highlighting its focus and relevance in providing infrastructural technologies for AI agents.
+------------------------------------------------------------
+
+2.
+Name: NeuralAgent
+Website: http://neuralagent.ai
+Description: Explainable AI-Agent Foundation Models for distributed autonomous intelligence
+        Founders: Burak Uzman,Dr. Onur Deniz
+Funding: 0
+Reason: NeuralAgent is frequently cited for its explicit focus on exploring AI agent technologies, which suggests a strong alignment with AI agent frameworks and tools, indicating it as a central player in this space.
+------------------------------------------------------------
+
+3.
+Name: AutoAgents
+Website: https://autoagents.ai
+Description: AutoAgents is committed to offering software services for intelligent assistants (Copilot) and autonomous agents (AI Agents) through AI.       
+        Founders: Not found
+Funding: 0
+Reason: AutoAgents is cited for its focus on automation involving agents, suggesting it provides platforms or tools that facilitate the creation or management of AI agents, hence its relevancy.
+------------------------------------------------------------
+
+4.
+Name: Agent AI
+Website: https://agentai.cloud
+Description: All-In-One AI Platform, Personalized AI Agents
+        Founders: Orion Blakesley
+Funding: 850000
+Reason: Agent AI, while details were sparse, its name and several analyses suggest relevance to AI agents, possibly including development tools for AI agents, marking it as a pertinent inclusion.
+------------------------------------------------------------
+
+5.
+Name: SynthFlow AI
+Website: https://synthflow.ai
+Description: Build AI Agents at Scale. No Coding Required.
+        Founders: Hakob Astabatsyan
+Funding: 1584617
+Reason: SynthFlow AI is highlighted for building AI systems more intuitively, suggesting a developer tool focus that aligns well with the creation and management of AI agents.
+------------------------------------------------------------
+
+6.
+Name: AI Box
+Website: https://aibox.ai
+Description: No-Code AI App Builder and Marketplace
+        Founders: Ben Pierson,Jaeden Schafer,Jillian Schafer
+Funding: 0
+Reason: AI Box is recognized for its No-Code AI Development platform, making AI more accessible and relevant for developers looking for streamlined ways to create AI agents.
+------------------------------------------------------------
+
+7.
+Name: CodeMate AI
+Website: https://codemate.ai
+Description: CodeMate is an AI pair programmer that helps developers and development teams write, fix and maintain their codebase.
+        Founders: Not found
+Funding: 0
+Reason: CodeMate AI is described as aiding in more efficient coding using AI, which ties into developer tools that assist in the creation or optimization of AI agents or frameworks.
+------------------------------------------------------------
+
+8.
+Name: Agent Copilot
+Website: https://agentcopilot.ai/
+Description: Personalized AI Video Agents for Customer Experience
+        Founders: JOSE L ROQUENI
+Funding: 125000
+Reason: Agent Copilot, the name suggests a tool or framework designed to assist in AI development, aligning with the startup aspect of providing solutions to AI agent developers.
+------------------------------------------------------------
+
+9.
+Name: PureCode AI
+Website: https://purecode.ai/
+Description: PureCode AI is a front-end developer tool where engineers can use text to describe and generate or customize software user interfaces.
+        Founders: Edward Daniel
+Funding: 3000000
+Reason: PureCode AI's focus on "Pure AI Coding" implies a strong relevance to AI developers, potentially offering tools for AI agent development, making it a suitable candidate.
+------------------------------------------------------------
+
+10.
+Name: Keywords AI
+Website: https://keywordsai.co
+Description: Unified DevOps platform to build AI applications.
+        Founders: Andy Li,Raymond Huang
+Funding: 500000
+Reason: Keywords AI is recognized for its promise in combining human and machine knowledge, which might imply it provides innovative tools for AI agent development, making it relevant to the query.
+------------------------------------------------------------
