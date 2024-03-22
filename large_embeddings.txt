@@ -1,0 +1,81 @@
+------------------------------------------------------------
+1.
+Name: Agent AI
+Website: https://agentai.cloud
+Description: All-In-One AI Platform, Personalized AI Agents
+Founders: Orion Blakesley
+Funding: 850000
+Reason: Frequently mentioned for its focus on AI agent development tools and frameworks, implying a direct deal with AI agent technologies.
+------------------------------------------------------------
+2.
+Name: SynthFlow AI
+Website: https://synthflow.ai
+Description: Build AI Agents at Scale. No Coding Required.
+Founders: Hakob Astabatsyan
+Funding: 1584617
+Reason: Noted for its innovative approach towards building AI agents with a flow-based programming method, emphasizing AI agent frameworks.
+------------------------------------------------------------
+3.
+Name: SourceAI
+Website: https://sourceai.dev
+Description: SourceAI is an AI-powered tool that can generate code in any programming language from any human language description. 
+Founders: Furkan BEKTES
+Funding: 12218
+Reason: Specializes in AI source code generation, a critical tool for AI agent development, making it directly relevant.
+------------------------------------------------------------
+4.
+Name: NeuralAgent
+Website: http://neuralagent.ai
+Description: Explainable AI-Agent Foundation Models for distributed autonomous intelligence
+Founders: Burak Uzman,Dr. Onur Deniz
+Funding: 0
+Reason: Explores AI agent capabilities with a focus on neural networks, providing advanced technological frameworks for AI agent development.
+------------------------------------------------------------
+5.
+Name: Agent Copilot
+Website: https://agentcopilot.ai/
+Description: Personalized AI Video Agents for Customer Experience
+Founders: JOSE L ROQUENI
+Funding: 125000
+Reason: Hinted at providing personalized development assistance for AI agents, indicating tools or services for AI agent development.
+------------------------------------------------------------
+6.
+Name: AITopTools
+Website: https://www.aitoptools.com
+Description: AITopTools is an AI tools directory website that offers a comprehensive and current list of AI tools available online. 
+Founders: Michael Kleinman
+Funding: 135000
+Reason: Likely offering a comprehensive suite of tools for AI development, including AI agent frameworks.
+------------------------------------------------------------
+7.
+Name: Open KX
+Website: http://www.openkx.wiki
+Description: An AI agent trained in business & technology to empower colaborators (+25 industries, +1.3k Business Drivers & +100k B2B assets).
+Founders: Gustavo Chavez
+Funding: 27000
+Reason: Mentioned as an AI agent platform, strongly focusing on enabling or enhancing AI agent capabilities.
+------------------------------------------------------------
+8.
+Name: Gradient AI
+Website: NA
+Description: Gradient AI platform helps developers build open-source large language models to build insights using single API.      
+Founders: Not found
+Funding: 5400000
+Reason: Implies a technical focus on algorithms essential for developing AI agents, such as deep learning or neural networks.       
+------------------------------------------------------------
+9.
+Name: MagickML
+Website: https://magickml.com
+Description: AI Development Engine (AIDE) for advanced machine learning, prompt-chaining, and autonomous agents with full stack deployment.
+Founders: Jesse Alton,Michael Sharpe
+Funding: 500000
+Reason: Focuses on AI development tools with an emphasis on machine learning, underlying its usefulness in AI agent frameworks.     
+------------------------------------------------------------
+10.
+Name: Blueprint AI
+Website: https://blueprint.ai
+Description: Blueprint AI uses existing tools to automate time-consuming processes like status reports, release notes, and more.    
+Founders: Not found
+Funding: 0
+Reason: Specializes in creating foundational structures for AI systems, likely including agent frameworks, aligning with the query. 
+------------------------------------------------------------

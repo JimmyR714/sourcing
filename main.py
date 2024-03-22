@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 from embeddings_utils import *
 
-#loads API key for crunchbase, TODO put your api key in a .env file
+#loads API key for crunchbase, TODO when implementing at Vela, put your api key in a .env file
 load_dotenv()
 CB_API_KEY = os.getenv("CB_API_KEY")
 
@@ -822,7 +822,7 @@ def controller():
                     2) Search the web for 1000s of companies relating to the query, e.g. search crunchbase using the categories we just obtained. You cannot do this at the same time as finding the categories.
                     3) Refine the set of companies down to around 100 using the information found and the query
                     4) Find all information relevant to our final 100 companies, including founder backgrounds
-                    5) Rank the top 10 companies using all of the information found and the query
+                    5) Rank the top 10 companies using all of the information found and the query. Recieve a list of 10 evaluations, and 10 indices of companies.
                     6) Output the companies with all necessary information
                     """
                 },
@@ -859,9 +859,10 @@ def controller():
                     ...
                     - They have founders with valuable backgrounds and invest in blockchain technology.
 
-                    Thought 6: I have the top 10 companies, I just need to output them
-                    Act 6: outputCompanies([4,1,9,39,12,43,99,64,70,71], 
-                    ["This company has a high rank on crunchbase, and is a blockchain investment company",
+                    Thought 6: I have the top 10 companies, I just need to output them. I need to input the indices array which is at
+                    the end of the previous message. I also need to input the evaluations array which is within the previous message.
+                    There should be the same number of evaluations and indices, both 10.
+                    Act 6: outputCompanies(indices = [4,1,9,39,12,43,99,64,70,71], evaluations = ["This company has a high rank on crunchbase, and is a blockchain investment company",
                     "They perform research into blockchain technology and invest in cryptocurrency", 
                     ...
                     "They have founders with valuable backgrounds and invest in blockchain technology."])
@@ -897,8 +898,10 @@ def controller():
                     ...
                     - The founders live in LA, and they have high-value investors
 
-                    Thought 6: I have the top 10 companies, I just need to output them
-                    Act 6: outputCompanies([61, 21, 34, 5, 72, 87, 20, 29, 71, 2], ["This company has been very successful recently, and their founders are based in LA.",
+                    Thought 6: I have the top 10 companies, I just need to output them. I must input the list of indices which was
+                    included in the previous message. This is one variable. The other variable is the list of evaluations. This
+                    was also in the previous message. I should make sure that I have 10 evaluations and 10 indices, in separate variables.
+                    Act 6: outputCompanies(indices = [61, 21, 34, 5, 72, 87, 20, 29, 71, 2], evaluations = ["This company has been very successful recently, and their founders are based in LA.",
                     "They have made many successful indie games", ... "The founders live in LA, and they have high-value investors"])
                     Observation 6: Outputting finished. Task complete.
         
