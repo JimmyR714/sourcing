@@ -815,14 +815,14 @@ def rank(companies, query, n=10):
 # Input data contains all information
 # Much more could be returned right now
 def outputCompanies(companies, uuids, evaluations):
-    #assert(len(indices) <= 10)
-    def outputCompany(company):
-        #TODO once the correct dataframe is passed to this function, ensure we use company["founder_backgrounds"] instead of names
-        return "Name: " + company["company"] + "\nWebsite: " + company["website"] + "\nDescription: " + company["description"] + "\nFounders: " + company["founder_names"] + "\nFunding: " + str(company["funding"]) + "\n"
-    
+    filtered_companies = companies[companies['uuid'].isin(uuids)]
+    filtered_companies = filtered_companies.set_index('uuid')
+    ordered_companies = filtered_companies.loc[uuids].reset_index()
+
     print("------------------------------------------------------------")
-    for rank,uuid in enumerate(uuids):
-        print(str(rank+1)+".\n"+outputCompany(companies.loc[companies["uuid"]==uuid])+"Reason: "+evaluations[rank]+"\n------------------------------------------------------------")
+    for i, row in ordered_companies.iterrows():
+        print(f"{i+1}.\nName: {row['company']}\nWebsite: {row['website']}\nLocation: {row['location']}\nDescription: {row['description']}\nFounders: {row['founder_names']}\nFunding: {row['funding']}\nReason: {evaluations[i]}\n")
+        print("------------------------------------------------------------")
 
 # LLM that controls the flow of the program. Uses a crew of LLMs to decide what tools to use, 
 # complete different parts of the procedure, etc
@@ -1154,3 +1154,23 @@ def controller():
                 )  
 
 controller()
+                
+def testing():
+    evaluations = ["This company number 1", "this company 2", "this company 3", "this company 4","this company 5"]
+    companies = pd.read_csv("embeddings.csv", sep="\t", encoding="utf8")
+    uuids = [
+        "f7d8590a-ffd9-4b4c-b408-a1cc7cb12308", #AutoAgents
+        "20a60a7e-b3f2-44b3-bf68-26a9d02ea36a", #My AI
+        "82aee40b-3dcb-4678-adc4-73b8e1c91a7e", #Together AI
+        "d506bceb-2ac5-48d2-80c4-5db5626cf7ba", #LastMile AI
+        "3f95ba26-a009-4783-a050-d45bded05b53" # Sapient AI
+        ]
+
+    filtered_companies = companies[companies['uuid'].isin(uuids)]
+    filtered_companies = filtered_companies.set_index('uuid')
+    ordered_companies = filtered_companies.loc[uuids].reset_index()
+
+    print("------------------------------------------------------------")
+    for i, row in ordered_companies.iterrows():
+        print(f"{i+1}.\nName: {row['company']}\nWebsite: {row['website']}\nLocation: {row['location']}\nDescription: {row['description']}\nFounders: {row['founder_names']}\nFunding: {row['funding']}\nReason: {evaluations[i]}\n")
+        print("------------------------------------------------------------")
