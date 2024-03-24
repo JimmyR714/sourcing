@@ -184,7 +184,7 @@ def searchCrunchbaseCompanies(categories, n=-1):
     return master
 
 # Function that finds the founder backgrounds from a list of founder UUIDs
-# TODO Currently uses crunchbase which has almost no information, but can be easily adjusted to use another API with more info on people
+# TODO Currently uses crunchbase which has almost no information on founders, but can be easily adjusted to use another API with more info on people
 def founderBackgrounds(founderUUIDList):
     founderUUIDs = founderUUIDList.split(",")
     founders = ""
@@ -396,7 +396,9 @@ def rank(companies, query, n=10):
                     You should output this as a list of their indices within the table. 
                     You should also output your reasons for choosing each company in this top {str(n)} in less than 10 words.
                     Make sure this evaluation explains why you chose it and how it relates to the criteria. 
-                    Ensure that each evaluation is very relevant to the company chosen. 
+                    Ensure that each evaluation is very relevant to the company chosen. This means you cannot make up any facts about the company
+                    e.g. If you know the name of the founder but no information about their background, you cannot include their education or past jobs as part of the evaluation,
+                    as you do not know them. The evaluation must consist of real facts that you have been told about the company.
                     Make it very clear which evaluation belongs to which company by including the name of each company chosen within its evaluation.
                     """
             },
@@ -804,6 +806,8 @@ def rank(companies, query, n=10):
             }
         )
 
+        #TODO I think sometimes the LLM makes up some of the evaluation points, especially about the founder backgrounds. I expect this
+        #to disappear once the founder backgrounds are included properly, but something to beware of 
         response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages, tools=tools, tool_choice = "auto")
         return response.choices[0].message.content
     
@@ -817,9 +821,11 @@ def outputCompanies(companies, indices, evaluations):
     selected_companies = companies.iloc[indices]
 
     print("------------------------------------------------------------")
+    count=0
     for i, row in selected_companies.iterrows():
-        print(f"{i+1}.\nName: {row['company']}\nWebsite: {row['website']}\nLocation: {row['location']}\nDescription: {row['description']}\nFounders: {row['founder_names']}\nFunding: {row['funding']}\nReason: {evaluations[i]}\n")
+        print(f"{count+1}.\nName: {row['company']}\nWebsite: {row['website']}\nLocation: {row['location']}\nDescription: {row['description']}\nFounders: {row['founder_names']}\nFunding: {row['funding']}\nReason: {evaluations[count]}\n")
         print("------------------------------------------------------------")
+        count+=1
 
 # LLM that controls the flow of the program. Uses a crew of LLMs to decide what tools to use, 
 # complete different parts of the procedure, etc
@@ -842,7 +848,7 @@ def controller():
                     Your job is to find the top 10 companies related to this query.
                     You will do this in 6 stages:
                     1) Get all information needed to search the web, e.g. get the crunchbase categories related to the query so we can search crunchbase
-                    2) Search the web for 1000s of companies relating to the query, e.g. search crunchbase using the categories we just obtained. You cannot do this at the same time as finding the categories.
+                    2) Search the web for all of the companies relating to the query, e.g. search crunchbase using the categories we just obtained. You cannot do this at the same time as finding the categories.
                     3) Refine the set of companies down to around 100 using the information found and the query
                     4) Find all information relevant to our final 100 companies, including founder backgrounds
                     5) Rank the top 10 companies using all of the information found and the query. Recieve a list of 10 evaluations, and 10 indices of companies.
@@ -861,11 +867,11 @@ def controller():
                     Observation 1: I now have the categories - ["blockchain-investment", "cryptocurrency"]
 
                     Thought 2: I need to perform a search for companies related to the query. I will be searching crunchbase for this. 
-                    I have the categories to search for. I want to search for 1000 companies related to these categories.
-                    Act 2: searchCrunchbaseCompanies(categories = ["blockchain-investment", "cryptocurrency"], n=1000)
-                    Observation 2: 1000 companies found
+                    I have the categories to search for. I want to search for all of the companies related to these categories.
+                    Act 2: searchCrunchbaseCompanies(categories = ["blockchain-investment", "cryptocurrency"], n=-1)
+                    Observation 2: 1971 companies found
 
-                    Thought 3: I have 1000 companies, but I need to refine this down to 100.
+                    Thought 3: I have all of the companies, but I need to refine this down to 100.
                     Act 3: refine("blockchain investment companies", n=100)
                     Observation 3: 100 companies remaining.
 
@@ -901,11 +907,11 @@ def controller():
                     Observation 1: I now have the categories - ["gaming", "game-development"]
 
                     Thought 2: I need to perform a search for companies related to the query. I will be searching crunchbase for this. 
-                    I have the categories to search for. I want to search for 1000 companies related to these categories.
-                    Act 2: searchCrunchbaseCompanies(categories = ["gaming", "game-development"], n=1000)
-                    Observation 2: 1000 companies found. 
+                    I have the categories to search for. I want to search for all of the companies related to these categories, so I will choose n=-1.
+                    Act 2: searchCrunchbaseCompanies(categories = ["gaming", "game-development"], n=-1)
+                    Observation 2: 2817 companies found. 
 
-                    Thought 3: I have 1000 companies, but I need to refine this down to 100.
+                    Thought 3: I have all of the companies, but I need to refine this down to 100.
                     Act 3: refine("indie game development, n=100")
                     Observation 3: 100 companies remaining.
 
@@ -954,7 +960,7 @@ def controller():
                         },
                         "n": {
                             "type": "number",
-                            "description": "number of results for search to return"
+                            "description": "number of results for search to return. input -1 to find all companies"
                         }
                     },
                     "required": [
@@ -1103,8 +1109,8 @@ def controller():
                         #TODO there is a bug where this can be called on stage 1, and it guesses categories - maybe fixed?
                         #try statement to catch this bug
                         try:
-                            #TODO change limit back to function_args["n"], this is for testing rn
-                            local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], -1)})
+                            #LLM chooses n=-1 when we want to search all of them. Right now, I expect it chooses this every time, but this can be changed
+                            local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
                             function_response = str(local_args["crunchbase_companies"].shape[0]) + " companies found."
                         except:
                             function_response = "Crunchbase Error - maybe LLM searched too early, or network is down?"
@@ -1112,7 +1118,9 @@ def controller():
             
                     case "searchCrunchbaseFounders": 
                         print("Searching for founders on Crunchbase... [CURRENTLY BROKEN]")
+
                         #TODO most crunchbase founders don't have their degree info on there, so this is currently non-functional
+                        #TODO replace this with your searching for founder function, maybe one for expensive mode and one for the cheap mode
                         local_args["refined_companies"]["founder_backgrounds"] = local_args["refined_companies"]["founder_names"]
 
                         #old code that searches crunchbase, but not enough info on there
@@ -1136,7 +1144,6 @@ def controller():
 
                     case "outputCompanies":
                         print("Outputting companies...")
-                        #TODO fix bug where the indices refer to large dataframe, not refined one - maybe fixed?
                         outputCompanies(local_args["refined_companies"], function_args["indices"], function_args["evaluations"])
                         function_response = "Outputting finished. Task complete."
 

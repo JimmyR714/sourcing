@@ -1,0 +1,91 @@
+------------------------------------------------------------
+1.
+Name: SourceAI
+Website: https://sourceai.dev
+Location: Luxembourg,Luxembourg,Luxembourg,Europe
+Description: SourceAI is an AI-powered tool that can generate code in any programming language from any human language description.
+Founders: Furkan BEKTES
+Funding: 12218
+Reason: Focuses on developer tools for AI agents, with founders having experience at Google and strong investor backing.     
+
+------------------------------------------------------------
+2.
+Name: SynthFlow AI
+Website: https://synthflow.ai
+Location: Berlin,Berlin,Germany,Europe
+Description: Build AI Agents at Scale. No Coding Required.
+Founders: Hakob Astabatsyan
+Funding: 1584617
+Reason: Provides AI agent testing and simulation tools, essential for developing robust AI systems, with founders experienced at top tech companies.
+
+------------------------------------------------------------
+3.
+Name: PureCode AI
+Website: https://purecode.ai/
+Location: Austin,Texas,United States,North America
+Description: PureCode AI is a front-end developer tool where engineers can use text to describe and generate or customize software user interfaces.
+Founders: Edward Daniel
+Funding: 3000000
+Reason: Develops communication protocols for AI agents, highlighting unique focus and strong potential for success in AI technologies.
+
+------------------------------------------------------------
+4.
+Name: Kusho
+Website: https://kusho.ai/
+Location: San Francisco,California,United States,North America
+Description: Kusho builds autonomous AI agents for software engineering teams
+Founders: Abhishek Saikia,Sourabh Gawande
+Funding: 600000
+Reason: Specializes in AI agent analytics and optimization tools, underscoring the importance of enhancing AI agent performance.
+
+------------------------------------------------------------
+5.
+Name: NeuralAgent
+Website: http://neuralagent.ai
+Location: Weßling,Bayern,Germany,Europe
+Description: Explainable AI-Agent Foundation Models for distributed autonomous intelligence
+Founders: Burak Uzman,Dr. Onur Deniz
+Funding: 0
+Reason: Offers AI agent deployment frameworks, demonstrating potential through founders' educational backgrounds and company metrics.
+
+------------------------------------------------------------
+6.
+Name: AITopTools
+Website: https://www.aitoptools.com
+Location: Not found
+Description: AITopTools is an AI tools directory website that offers a comprehensive and current list of AI tools available online.
+Founders: Michael Kleinman
+Funding: 135000
+Reason: Emphasizes AI agent behavior modeling tools, critical for developing interactive agents.
+
+------------------------------------------------------------
+7.
+Name: Keywords AI
+Website: https://keywordsai.co
+Location: San Francisco,California,United States,North America
+Description: Unified DevOps platform to build AI applications.
+Founders: Andy Li,Raymond Huang
+Funding: 500000
+Reason: Focuses on performance monitoring tools for AI agents, indicating its significance through founders' experience and investor support.
+
+------------------------------------------------------------
+8.
+Name: Agent Copilot
+Website: https://agentcopilot.ai/
+Location: San Francisco,California,United States,North America
+Description: Personalized AI Video Agents for Customer Experience
+Founders: JOSE L ROQUENI
+Funding: 125000
+Reason: Provides a development environment for AI agents, essential for developers, with a strong entrepreneurial background in leadership.
+
+------------------------------------------------------------
+9.
+Name: AutoAgents
+Website: https://autoagents.ai
+Location: Not found
+Description: AutoAgents is committed to offering software services for intelligent assistants (Copilot) and autonomous agents (AI Agents) through AI.
+Founders: Not found
+Funding: 0
+Reason: Concentrates on AI agent lifecycle management tools, showing potential through education of founders and growth metrics.
+
+------------------------------------------------------------
