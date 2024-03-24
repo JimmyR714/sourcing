@@ -286,8 +286,8 @@ def refine(df, query, n=100):
     df["embedding_distance"] = df["embedding"].apply(lambda x: abs(distance_from_embedding(query_embedding, x, distance_metric="cosine")))
     #choose the n most relevant companies
     refined = df.nsmallest(n, "embedding_distance")
-    refined.to_csv("embeddings.csv",  sep="\t", encoding="utf-8")
-    return refined
+    refined.to_csv("embeddings.csv",  sep="\t", encoding="utf-8") #only used for testing, also storage of top 100 companies
+    return refined.reset_index()
 
 # Function to load the crunchbase categories from a file
 def loadCategories():
@@ -393,7 +393,7 @@ def rank(companies, query, n=10):
                     You should evaulate the companies according to all criteria, with slightly more weight
                     given to the higher criteria e.g. 1,2 than the lower ones.
                     You should output the top {str(n)} companies by descending evaluation score that you have chosen. 
-                    You should output this as a list of their UUIDs. 
+                    You should output this as a list of their indices within the table. 
                     You should also output your reasons for choosing each company in this top {str(n)} in less than 10 words.
                     Make sure this evaluation explains why you chose it and how it relates to the criteria. 
                     Ensure that each evaluation is very relevant to the company chosen. 
@@ -750,7 +750,7 @@ def rank(companies, query, n=10):
                     """You are a helpful assistant that is able to evaluate a list of companies that relate to a query. 
                     You can perform a thought to acquire an evaluation of the companies. You should think at least 5 times.
                     After thinking, you will have the evaluations of certain companies, at which stage, you should choose the 10
-                    that relate most to the query. Output the UUIDs that relate to these 10 companies at the end.
+                    that relate most to the query. 
                     You should call the 5 thoughts as 5 separate functions, and this should be done in your first step of thinking.
                     Your initial output should be the 5 functions calls.
                     """
@@ -769,7 +769,7 @@ def rank(companies, query, n=10):
                 "function": {
                     "name": "thought",
                     "description": """
-                    Perform an evaluation of the companies. Return the UUIDs of the chosen companies along with an evaluation.
+                    Perform an evaluation of the companies. Return the indices of the chosen companies along with an evaluation.
                     In each evaluation, include the name of the company. Ensure that it is clear which evaluation relates to each company.
                     """
                 }
@@ -798,13 +798,12 @@ def rank(companies, query, n=10):
                 "role": "user",
                 "content": 
                 """
-                Now that you have done the thoughts, you must return the list of the 10 UUIDs of companies that relate most to the query via their evaluations.
+                Now that you have done the thoughts, you must return the list of the 10 indicess of companies that relate most to the query via their evaluations.
                 You should include an evaluation with each explaining why they seemed the most relevant to the query, and why you chose them.
-                Put the list of UUIDs clearly at the end. Do not perform any more thoughts! Let's think about this step by step, and have a good reason for each choice."""
+                Put the list of indices clearly at the end. Do not perform any more thoughts! Let's think about this step by step, and have a good reason for each choice."""
             }
         )
 
-        #TODO save the evaluation for output
         response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages, tools=tools, tool_choice = "auto")
         return response.choices[0].message.content
     
@@ -814,13 +813,11 @@ def rank(companies, query, n=10):
 # Function that takes a list of companies, each with their relevant company information and outputs the necessary information about each one
 # Input data contains all information
 # Much more could be returned right now
-def outputCompanies(companies, uuids, evaluations):
-    filtered_companies = companies[companies['uuid'].isin(uuids)]
-    filtered_companies = filtered_companies.set_index('uuid')
-    ordered_companies = filtered_companies.loc[uuids].reset_index()
+def outputCompanies(companies, indices, evaluations):
+    selected_companies = companies.iloc[indices]
 
     print("------------------------------------------------------------")
-    for i, row in ordered_companies.iterrows():
+    for i, row in selected_companies.iterrows():
         print(f"{i+1}.\nName: {row['company']}\nWebsite: {row['website']}\nLocation: {row['location']}\nDescription: {row['description']}\nFounders: {row['founder_names']}\nFunding: {row['funding']}\nReason: {evaluations[i]}\n")
         print("------------------------------------------------------------")
 
@@ -848,7 +845,7 @@ def controller():
                     2) Search the web for 1000s of companies relating to the query, e.g. search crunchbase using the categories we just obtained. You cannot do this at the same time as finding the categories.
                     3) Refine the set of companies down to around 100 using the information found and the query
                     4) Find all information relevant to our final 100 companies, including founder backgrounds
-                    5) Rank the top 10 companies using all of the information found and the query. Recieve a list of 10 evaluations, and 10 uuids of companies.
+                    5) Rank the top 10 companies using all of the information found and the query. Recieve a list of 10 evaluations, and 10 indices of companies.
                     6) Output the companies with all necessary information
                     """
                 },
@@ -879,7 +876,7 @@ def controller():
 
                     Thought 5: Now that I have the more in depth information, I need to rank each of the companies to find the top 10. 
                     Act 5: rank("blockchain investment companies", n=10)
-                    Observation 5: The top 10 companies have uuids [bdub1-nunfi11b-4111-bc94-f210d2872e8, 878210-fsg2-bdhu28-fygue281, ... , 28r8rg-bfsyu22-fbwy2r8-wyg882826]. 
+                    Observation 5: The top 10 companies have indices [54,13,91,1,2,74,12,90,53,19]. 
                     The reasons for each one are as follows:
                     - This company has a high rank on crunchbase, and is a blockchain investment company
                     - They perform research into blockchain technology and invest in cryptocurrency
@@ -889,7 +886,7 @@ def controller():
                     Thought 6: I have the top 10 companies, I just need to output them. I need to input the indices array which is at
                     the end of the previous message. I also need to input the evaluations array which is within the previous message.
                     There should be the same number of evaluations and indices, both 10.
-                    Act 6: outputCompanies(uuids = ["bdub1-nunfi11b-4111-bc94-f210d2872e8", "878210-fsg2-bdhu28-fygue281", ... , "28r8rg-bfsyu22-fbwy2r8-wyg882826"], evaluations = ["This company has a high rank on crunchbase, and is a blockchain investment company",
+                    Act 6: outputCompanies(indices = [54,13,91,1,2,74,12,90,53,19], evaluations = ["This company has a high rank on crunchbase, and is a blockchain investment company",
                     "They perform research into blockchain technology and invest in cryptocurrency", 
                     ...
                     "They have founders with valuable backgrounds and invest in blockchain technology."])
@@ -919,7 +916,7 @@ def controller():
 
                     Thought 5: Now that I have the more in depth information, I need to rank each of the companies to find the top 10. 
                     Act 5: rank("indie game development", n=10)
-                    Observation 5: The top 10 companies have the uuids = ["27r8y78q7-fvgs278-vfy276", "3287rg6v-fbsye7-fbye72-abvhg", ..., "wy82-fbsyfe28-wvyfu2-fbhvef27"]. 
+                    Observation 5: The top 10 companies have the indices [2,1,23,56,75,35,64,24,78,58]
                     The reasons are:
                     - This company has been very successful recently, and their founders are based in LA.
                     - They have made many successful indie games
@@ -929,7 +926,7 @@ def controller():
                     Thought 6: I have the top 10 companies, I just need to output them. I must input the list of indices which was
                     included in the previous message. This is one variable. The other variable is the list of evaluations. This
                     was also in the previous message. I should make sure that I have 10 evaluations and 10 indices, in separate variables.
-                    Act 6: outputCompanies(uuids = ["27r8y78q7-fvgs278-vfy276", "3287rg6v-fbsye7-fbye72-abvhg", ..., "wy82-fbsyfe28-wvyfu2-fbhvef27"], evaluations = ["This company has been very successful recently, and their founders are based in LA.",
+                    Act 6: outputCompanies(indices = [2,1,23,56,75,35,64,24,78,58], evaluations = ["This company has been very successful recently, and their founders are based in LA.",
                     "They have made many successful indie games", ... "The founders live in LA, and they have high-value investors"])
                     Observation 6: Outputting finished. Task complete.
         
@@ -1041,17 +1038,17 @@ def controller():
             "type": "function",
             "function": {
                 "name": "outputCompanies",
-                "description": "takes a set of companies and their detailed information, along with a list of their uuids, and outputs the website URL, name, description, founders and their background, funding and its background for each company with a uuid in the list within the dataframe",
+                "description": "takes a set of companies and their detailed information, along with a list of their indices, and outputs the website URL, name, description, founders and their background, funding and its background for each company at an index stored in indices within the dataframe",
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "uuids": {
+                        "indices": {
                             "type": "array",
                             "items": {
-                                "type": "string",
-                                "description": "a uuid of a company in the dataframe"
+                                "type": "integer",
+                                "description": "the index of one of the companies within the datafram"
                             },
-                            "description": "the list of uuids of the companies to be outputted"
+                            "description": "the list of indices of the companies to be outputted"
                         },
                         "evaluations": {
                             "type": "array",
@@ -1063,7 +1060,7 @@ def controller():
                         }
                     },
                     "required": [
-                        "uuids",
+                        "indices",
                         "evaluations"
                     ]
                 }
@@ -1140,7 +1137,7 @@ def controller():
                     case "outputCompanies":
                         print("Outputting companies...")
                         #TODO fix bug where the indices refer to large dataframe, not refined one - maybe fixed?
-                        outputCompanies(local_args["refined_companies"], function_args["uuids"], function_args["evaluations"])
+                        outputCompanies(local_args["refined_companies"], function_args["indices"], function_args["evaluations"])
                         function_response = "Outputting finished. Task complete."
 
                 #add the necessary function response to the messages for the next conversation
