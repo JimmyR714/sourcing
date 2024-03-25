@@ -7,13 +7,13 @@ import os
 from dotenv import load_dotenv
 from embeddings_utils import *
 
-#loads API key for crunchbase, TODO put your api key in a .env file
+#loads API key for crunchbase, TODO when implementing at Vela, put your api key in a .env file
 load_dotenv()
 CB_API_KEY = os.getenv("CB_API_KEY")
 
 # Constants 
 EXPENSIVE_MODE = True #this will cost more to run. uses higher quality LLMs and does more calls to them too
-MAX_FUNDING = 10000000 #Can be asjusted manually here TODO have this be a parameter inputted by LLM to crunchbase search
+MAX_FUNDING = 1000000000 #Can be asjusted manually here TODO have this be a parameter inputted by LLM to crunchbase search
 client = OpenAI()
 
 # Function to get the embedding for some text. Primarily used for comparing with query
@@ -184,7 +184,7 @@ def searchCrunchbaseCompanies(categories, n=-1):
     return master
 
 # Function that finds the founder backgrounds from a list of founder UUIDs
-# TODO Currently uses crunchbase which has almost no information, but can be easily adjusted to use another API with more info on people
+# TODO Currently uses crunchbase which has almost no information on founders, but can be easily adjusted to use another API with more info on people
 def founderBackgrounds(founderUUIDList):
     founderUUIDs = founderUUIDList.split(",")
     founders = ""
@@ -283,8 +283,8 @@ def refine(df, query, n=100):
     df["embedding_distance"] = df["embedding"].apply(lambda x: abs(distance_from_embedding(query_embedding, x, distance_metric="cosine")))
     #choose the n most relevant companies
     refined = df.nsmallest(n, "embedding_distance")
-    refined.to_csv("embeddings.csv",  sep="\t", encoding="utf-8")
-    return refined
+    refined.to_csv("embeddings.csv",  sep="\t", encoding="utf-8") #only used for testing, also storage of top 100 companies
+    return refined.reset_index()
 
 # Function to load the crunchbase categories from a file
 def loadCategories():
@@ -332,7 +332,6 @@ def chooseCategory(query):
     response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages)
     return response.choices[0].message.content
 
-
 #TODO implement the following searching tools 
 # Function to search github for results related to a query
 # q is a carefully formatted query
@@ -360,7 +359,7 @@ def rank(companies, query, n=10):
     #ToT works well here
     #TODO ToT implementation can be much cleaner and more advanced here, this is only very basic to ensure evaluation is decent
     company_info = companies.apply((lambda r: f"""
-        Name: {r["company"]}; Description: {r["description"]}; Categories: {r["categories"]}; Employees: {r["num_of_employees"]}; Revenue: {r["revenue"]};
+        UUID: {r["uuid"]}; Name: {r["company"]}; Description: {r["description"]}; Categories: {r["categories"]}; Employees: {r["num_of_employees"]}; Revenue: {r["revenue"]};
         Location: {r["location"]}; Funding: {str(r["funding"])}; Funding Stage: {r["funding_stage"]}; 
         Number of Investors: {r["num_of_investors"]}; Top Investors: {str(r["investors"])}; 
         Weekly Rank Change: {str(r["rank_change_week"])}; Monthly Rank Change: {str(r["rank_change_month"])}; Quarterly Rank Change: {str(r["rank_change_quarter"])};
@@ -390,9 +389,14 @@ def rank(companies, query, n=10):
                     8) Companies that have top-tier investors are better than those that don't
                     You should evaulate the companies according to all criteria, with slightly more weight
                     given to the higher criteria e.g. 1,2 than the lower ones.
-                    You should output the names of the top {str(n)} companies by descending rank as a list of integers.
-                    For each company chosen, output your evaluation in less than 10 words, explaining why you chose it and how
-                    it relates to the criteria
+                    You should output the top {str(n)} companies by descending evaluation score that you have chosen. 
+                    You should output this as a list of their indices within the table. 
+                    You should also output your reasons for choosing each company in this top {str(n)} in less than 10 words.
+                    Make sure this evaluation explains why you chose it and how it relates to the criteria. 
+                    Ensure that each evaluation is very relevant to the company chosen. This means you cannot make up any facts about the company
+                    e.g. If you know the name of the founder but no information about their background, you cannot include their education or past jobs as part of the evaluation,
+                    as you do not know them. The evaluation must consist of real facts that you have been told about the company.
+                    Make it very clear which evaluation belongs to which company by including the name of each company chosen within its evaluation.
                     """
             },
             { #these fake companies were generated by ChatGPT, so information is random. this is ideal as it gives a good variety of companies
@@ -400,6 +404,7 @@ def rank(companies, query, n=10):
                 "content": """
                     Q: The query is: companies that specialise in AI image recognition software
                     The companies are: 
+                    UUID = 7283924-cdcb-4111-bc94-f22cd91r72e8
                     Name: SmarTech
                     Description: Technology company specialising in development of AI games
                     Categories: ["gaming", "artificial-intelligence"]
@@ -418,6 +423,7 @@ def rank(companies, query, n=10):
                     Name: William Crowford, Degrees: University of Michigan in Computer Science, Jobs: Software Engineer at TechCo, Previous Companies: Name: GameTech, Funding: 0, Status: Inactive
                     Name: Polly Richardson, Degrees: University of Michigan in Computer Science, Jobs: Software Engineer at TechCo, Previous Companies: Name: GameTech, Funding: 0, Status: Inactive
 
+                    UUID = 7283924-cdcb-4111-bc94-f22cd91r72e8
                     Name: Recognize
                     Description: Specialize in video and image recognition using artificial intelligence; 
                     Categories: ["image_recognition", "artificial-intelligence", "video_recognition]
@@ -435,6 +441,7 @@ def rank(companies, query, n=10):
                     Name: Xin Ong, Degrees: Harvard in Computer Science, Jobs: Product Manager at Meta, Previous Companies: None
                     Name: Peter Klein, Degrees: University of Stanford in Computer Science, Jobs: Software Engineer at Google, Previous Companies: None
 
+                    UUID = 733d74b4-cdcb-4111-bc94-f22cd9gr72e8
                     Name: DataDive
                     Description: Utilizes AI to analyze and interpret complex data sets for business intelligence.
                     Categories: ["data_analysis", "artificial_intelligence"]
@@ -453,6 +460,7 @@ def rank(companies, query, n=10):
                     Name: Jessica Tao, Degrees: Columbia University in Data Science, Jobs: Data Scientist at DataWorks, Previous Companies: Name: InsightData, Funding: 0, Status: Closed
                     Name: Mark Benson, Degrees: NYU in Business Analytics, Jobs: Analyst at FinTech Solutions, Previous Companies: None
 
+                    UUID: 733d74b4-cbcb-4f11-bc04-f22cd99e54e8
                     Name: VisionAI
                     Description: Develops cutting-edge AI algorithms for facial recognition applications.
                     Categories: ["image_recognition", "artificial_intelligence", "facial_recognition"]
@@ -470,6 +478,7 @@ def rank(companies, query, n=10):
                     Founders:
                     Name: Alice Jordan, Degrees: Oxford in AI and Machine Learning, Jobs: Research Scientist at AI Lab, Previous Companies: Name: FaceTech, Funding: 500000, Status: Merged
 
+                    UUID = 1s28db24-c01b-4111-bc94-f220d92872e8
                     Name: EchoSense
                     Description: Offers AI-powered solutions for sound recognition and audio analysis.
                     Categories: ["sound_recognition", "artificial_intelligence"]
@@ -487,6 +496,7 @@ def rank(companies, query, n=10):
                     Founders:
                     Name: Julian Schmidt, Degrees: Technical University of Berlin in Sound Engineering, Jobs: Audio Engineer at SoundWave, Previous Companies: None
 
+                    UUID = 1sjd9224-c01b-4111-bc94-f22019snh2e8
                     Name: HealthAI
                     Description: Uses artificial intelligence to predict and diagnose health conditions from medical imaging.
                     Categories: ["healthcare", "artificial_intelligence", "medical_imaging"]
@@ -504,6 +514,7 @@ def rank(companies, query, n=10):
                     Founders:
                     Name: Dr. Emily Stone, Degrees: Harvard Medical School, Jobs: Radiologist at Boston Medical Center, Previous Companies: None
 
+                    UUID = 31sjd9224-c01b-4111-bc94-f220d92872e8
                     Name: AgriGrow
                     Description: Employs AI for precision farming, enhancing crop yield predictions and soil health.
                     Categories: ["agriculture", "artificial_intelligence"]
@@ -521,18 +532,19 @@ def rank(companies, query, n=10):
                     Founders:
                     Name: Carlos Mendez, Degrees: UC Davis in Plant Sciences, Jobs: Agronomist at GreenFields, Previous Companies: None
 
-                    Name: AIProve; Description: Provides AI-driven solutions for automated testing and quality assurance; Categories: ["software-testing", "artificial-intelligence"]; Employees: 15; Revenue: 500000; Location: Austin; Funding: 2500000; Funding Stage: seed; Number of Investors: 3; Top Investors: TechStart, AngelHub; Weekly Rank Change: 3.4; Monthly Rank Change: 7.1; Quarterly Rank Change: 3.5; Rank: 122134; Founders: Name: Sarah Jenkins, Degrees: Carnegie Mellon University in Software Engineering, Jobs: Quality Assurance Manager at SoftDev, Previous Companies: Name: QualityFirst, Funding: 0, Status: Inactive.
+                    UUID: 1sjd1224-c01b-4111-bc94-f220d92872e8; Name: AIProve; Description: Provides AI-driven solutions for automated testing and quality assurance; Categories: ["software-testing", "artificial-intelligence"]; Employees: 15; Revenue: 500000; Location: Austin; Funding: 2500000; Funding Stage: seed; Number of Investors: 3; Top Investors: TechStart, AngelHub; Weekly Rank Change: 3.4; Monthly Rank Change: 7.1; Quarterly Rank Change: 3.5; Rank: 122134; Founders: Name: Sarah Jenkins, Degrees: Carnegie Mellon University in Software Engineering, Jobs: Quality Assurance Manager at SoftDev, Previous Companies: Name: QualityFirst, Funding: 0, Status: Inactive.
 
-                    Name: SecureAI; Description: Advanced AI image and object recognition for security systems; Categories: ["image_recognition", "security", "artificial-intelligence"]; Employees: 30; Revenue: 2000000; Location: London; Funding: 5000000; Funding Stage: Series A; Number of Investors: 4; Top Investors: SecureTech Ventures, AI Fund; Weekly Rank Change: 4.6; Monthly Rank Change: 12.3; Quarterly Rank Change: 6.7; Rank: 97856; Founders: Name: Michael O'Donnell, Degrees: University of Edinburgh in AI and Robotics, Jobs: Security Analyst at CyberNet, Previous Companies: None.
+                    UUID: 1sjd9224-c01b-4111-bc94-f220d92872e8; Name: SecureAI; Description: Advanced AI image and object recognition for security systems; Categories: ["image_recognition", "security", "artificial-intelligence"]; Employees: 30; Revenue: 2000000; Location: London; Funding: 5000000; Funding Stage: Series A; Number of Investors: 4; Top Investors: SecureTech Ventures, AI Fund; Weekly Rank Change: 4.6; Monthly Rank Change: 12.3; Quarterly Rank Change: 6.7; Rank: 97856; Founders: Name: Michael O'Donnell, Degrees: University of Edinburgh in AI and Robotics, Jobs: Security Analyst at CyberNet, Previous Companies: None.
 
-                    Name: DeepLearn; Description: Specializes in developing deep learning models for natural language processing; Categories: ["natural_language_processing", "artificial-intelligence", "deep_learning"]; Employees: 22; Revenue: 750000; Location: Berlin; Funding: 3000000; Funding Stage: seed; Number of Investors: 3; Top Investors: EuroTech, BerlinAI; Weekly Rank Change: 1.9; Monthly Rank Change: 8.5; Quarterly Rank Change: 2.4; Rank: 155432; Founders: Name: Emma Hart, Degrees: Technical University of Munich in Computational Linguistics, Jobs: Data Scientist at DataWorks, Previous Companies: None.
+                    UUID: 87274299-10hfbs-189h9-1h82-hubfhsj; Name: DeepLearn; Description: Specializes in developing deep learning models for natural language processing; Categories: ["natural_language_processing", "artificial-intelligence", "deep_learning"]; Employees: 22; Revenue: 750000; Location: Berlin; Funding: 3000000; Funding Stage: seed; Number of Investors: 3; Top Investors: EuroTech, BerlinAI; Weekly Rank Change: 1.9; Monthly Rank Change: 8.5; Quarterly Rank Change: 2.4; Rank: 155432; Founders: Name: Emma Hart, Degrees: Technical University of Munich in Computational Linguistics, Jobs: Data Scientist at DataWorks, Previous Companies: None.
 
-                    Name: SynthGen; Description: Creates synthetic data for training AI models in various sectors; Categories: ["synthetic_data", "data_science", "artificial-intelligence"]; Employees: 18; Revenue: 300000; Location: Toronto; Funding: 2000000; Funding Stage: seed; Number of Investors: 2; Top Investors: AI Ventures, NorthStar; Weekly Rank Change: 2.7; Monthly Rank Change: 6.4; Quarterly Rank Change: 4.3; Rank: 207655; Founders: Name: Leonard McCoy, Degrees: University of Toronto in Data Science, Jobs: Research Scientist at BigData, Previous Companies: Name: DataLab, Funding: 50000, Status: Merged.
+                    UUID: 1sjd9224-c01b-4111-b1904-f220d92872e8; Name: SynthGen; Description: Creates synthetic data for training AI models in various sectors; Categories: ["synthetic_data", "data_science", "artificial-intelligence"]; Employees: 18; Revenue: 300000; Location: Toronto; Funding: 2000000; Funding Stage: seed; Number of Investors: 2; Top Investors: AI Ventures, NorthStar; Weekly Rank Change: 2.7; Monthly Rank Change: 6.4; Quarterly Rank Change: 4.3; Rank: 207655; Founders: Name: Leonard McCoy, Degrees: University of Toronto in Data Science, Jobs: Research Scientist at BigData, Previous Companies: Name: DataLab, Funding: 50000, Status: Merged.
 
-                    Name: CodeIntelli; Description: Leveraging AI to automate coding and software development processes; Categories: ["software_development", "automation", "artificial-intelligence"]; Employees: 25; Revenue: 1200000; Location: New York; Funding: 4500000; Funding Stage: Series A; Number of Investors: 5; Top Investors: SoftBank, CodeWorks; Weekly Rank Change: 5.9; Monthly Rank Change: 11.4; Quarterly Rank Change: 5.1; Rank: 88321; Founders: Name: Raj Patel, Degrees: Stanford University in Computer Science, Jobs: Software Engineer at TechSolutions, Previous Companies: None.
+                    UUID: 9abuia224-c01b-4111-bc94-f210d2872e8; Name: CodeIntelli; Description: Leveraging AI to automate coding and software development processes; Categories: ["software_development", "automation", "artificial-intelligence"]; Employees: 25; Revenue: 1200000; Location: New York; Funding: 4500000; Funding Stage: Series A; Number of Investors: 5; Top Investors: SoftBank, CodeWorks; Weekly Rank Change: 5.9; Monthly Rank Change: 11.4; Quarterly Rank Change: 5.1; Rank: 88321; Founders: Name: Raj Patel, Degrees: Stanford University in Computer Science, Jobs: Software Engineer at TechSolutions, Previous Companies: None.
 
-                    Name: ImageMind; Description: AI-powered platform for enhancing and analyzing digital images; Categories: ["image_processing", "artificial-intelligence", "digital_media"]; Employees: 20; Revenue: 800000; Location: Seoul; Funding: 2200000; Funding Stage: seed; Number of Investors: 2; Top Investors: MediaTech, Visionary; Weekly Rank Change: 6.2; Monthly Rank Change: 13.7; Quarterly Rank Change: 7.8; Rank: 102657; Founders: Name: Hye-Jin Kim, Degrees: KAIST in Computer Vision, Jobs: Image Analyst at PixelPlus, Previous Companies: None.
+                    UUID: 99hdu224-c01b-4111-bc94-f210d2872e8; Name: ImageMind; Description: AI-powered platform for enhancing and analyzing digital images; Categories: ["image_processing", "artificial-intelligence", "digital_media"]; Employees: 20; Revenue: 800000; Location: Seoul; Funding: 2200000; Funding Stage: seed; Number of Investors: 2; Top Investors: MediaTech, Visionary; Weekly Rank Change: 6.2; Monthly Rank Change: 13.7; Quarterly Rank Change: 7.8; Rank: 102657; Founders: Name: Hye-Jin Kim, Degrees: KAIST in Computer Vision, Jobs: Image Analyst at PixelPlus, Previous Companies: None.
 
+                    UUID: 1eoihdu224-c01b-4111-bc94-f210d2872e8
                     Name: DataDeep
                     Description: Data analytics firm leveraging AI to provide deep insights into big data.
                     Categories: ["data-analytics", "artificial-intelligence"]
@@ -550,6 +562,7 @@ def rank(companies, query, n=10):
                     Founders:
                     Name: Sophia Martins, Degrees: Cornell University in Data Science, Jobs: Data Scientist at IBM, Previous Companies: None
 
+                    UUID: 9910ie9924-c01b-4111-bc94-f210d2872e8
                     Name: VisionaryAI
                     Description: Developing cutting-edge facial recognition software using artificial intelligence.
                     Categories: ["image_recognition", "artificial-intelligence", "facial_recognition"]
@@ -567,6 +580,7 @@ def rank(companies, query, n=10):
                     Founders:
                     Name: Alex Jensen, Degrees: UCLA in Computer Science, Jobs: Engineer at Snap Inc., Previous Companies: None
 
+                    UUID: 99hdu224-c01b-4111-bc94-f188qdhq2e8
                     Name: EchoTech
                     Description: EchoTech pioneers in echo location technologies for navigation and mapping with AI.
                     Categories: ["navigation", "artificial-intelligence", "mapping"]
@@ -584,6 +598,7 @@ def rank(companies, query, n=10):
                     Founders:
                     Name: Rita Kozlov, Degrees: MIT in Electrical Engineering, Jobs: Research Scientist at NASA, Previous Companies: None
 
+                    UUID: 9989qbh224-c01b-4111-bc94-f210d2872e8
                     Name: DeepSightAI
                     Description: Specializes in AI-powered surveillance systems with real-time video analytics.
                     Categories: ["image_recognition", "artificial-intelligence", "surveillance"]
@@ -601,6 +616,7 @@ def rank(companies, query, n=10):
                     Founders:
                     Name: Jamal Yunos, Degrees: Imperial College London in AI, Jobs: AI Researcher at DeepMind, Previous Companies: None
 
+                    UUID: 99n11jen924-c01b-4111-bc94-f210d2872e8
                     Name: GenieAI
                     Description: AI platform offering personalized content recommendations using machine learning.
                     Categories: ["machine_learning", "artificial-intelligence", "content_recommendation"]
@@ -618,18 +634,19 @@ def rank(companies, query, n=10):
                     Founders:
                     Name: Elena Vasquez, Degrees: University of Toronto in Computer Science, Jobs: Software Developer at Shopify, Previous Companies: None
 
-                    Name: AI Genesis; Description: Pioneers in creating AI-driven solutions for healthcare diagnostics; Categories: ["healthcare", "artificial-intelligence"]; Employees: 50; Revenue: 5000000; Location: Boston; Funding: 20000000; Funding Stage: early_stage; Number of Investors: 3; Top Investors: MedTech Innovate, HealthAI Ventures; Weekly Rank Change: 3.5; Monthly Rank Change: 7.1; Quarterly Rank Change: 4.3; Rank: 34567; Founders: Name: Sarah Tan, Degrees: Johns Hopkins University in Biomedical Engineering, Jobs: Research Scientist at MedSolutions, Previous Companies: Name: HealthTrack, Funding: 500000, Status: Acquired by MedTech Innovate
+                    UUID: 991buidqb-c01b-4111-bc94-f210d2872e8; Name: AI Genesis; Description: Pioneers in creating AI-driven solutions for healthcare diagnostics; Categories: ["healthcare", "artificial-intelligence"]; Employees: 50; Revenue: 5000000; Location: Boston; Funding: 20000000; Funding Stage: early_stage; Number of Investors: 3; Top Investors: MedTech Innovate, HealthAI Ventures; Weekly Rank Change: 3.5; Monthly Rank Change: 7.1; Quarterly Rank Change: 4.3; Rank: 34567; Founders: Name: Sarah Tan, Degrees: Johns Hopkins University in Biomedical Engineering, Jobs: Research Scientist at MedSolutions, Previous Companies: Name: HealthTrack, Funding: 500000, Status: Acquired by MedTech Innovate
 
-                    Name: Visionary Robotics; Description: Developing next-generation AI-powered robots for industrial automation; Categories: ["robotics", "artificial-intelligence", "industrial"]; Employees: 70; Revenue: 8000000; Location: Munich; Funding: 15000000; Funding Stage: Series A; Number of Investors: 4; Top Investors: RoboGlobal, AI Fund; Weekly Rank Change: 4.7; Monthly Rank Change: 5.6; Quarterly Rank Change: 6.2; Rank: 22654; Founders: Name: Max Zimmer, Degrees: Technical University of Munich in Mechanical Engineering, Jobs: Lead Engineer at AutoRobo, Previous Companies: Name: RoboCraft, Funding: 0, Status: Inactive
+                    UUID: 99hdu224-c011niow-u829n-f210d2872e8; Name: Visionary Robotics; Description: Developing next-generation AI-powered robots for industrial automation; Categories: ["robotics", "artificial-intelligence", "industrial"]; Employees: 70; Revenue: 8000000; Location: Munich; Funding: 15000000; Funding Stage: Series A; Number of Investors: 4; Top Investors: RoboGlobal, AI Fund; Weekly Rank Change: 4.7; Monthly Rank Change: 5.6; Quarterly Rank Change: 6.2; Rank: 22654; Founders: Name: Max Zimmer, Degrees: Technical University of Munich in Mechanical Engineering, Jobs: Lead Engineer at AutoRobo, Previous Companies: Name: RoboCraft, Funding: 0, Status: Inactive
 
-                    Name: DeepThink; Description: AI startup focusing on deep learning algorithms for financial forecasting; Categories: ["financial-technology", "artificial-intelligence"]; Employees: 30; Revenue: 3000000; Location: New York; Funding: 8000000; Funding Stage: seed; Number of Investors: 2; Top Investors: FinTech Innovators, Quantum Capital; Weekly Rank Change: 2.8; Monthly Rank Change: 10.0; Quarterly Rank Change: 3.7; Rank: 54576; Founders: Name: Elena Morris, Degrees: Columbia University in Financial Engineering, Jobs: Quantitative Analyst at Wall Street, Previous Companies: Name: QuantPredict, Funding: 0, Status: Inactive
+                    UUID: 1najk4-c01b-4111-bc94-f210d2872e8; Name: DeepThink; Description: AI startup focusing on deep learning algorithms for financial forecasting; Categories: ["financial-technology", "artificial-intelligence"]; Employees: 30; Revenue: 3000000; Location: New York; Funding: 8000000; Funding Stage: seed; Number of Investors: 2; Top Investors: FinTech Innovators, Quantum Capital; Weekly Rank Change: 2.8; Monthly Rank Change: 10.0; Quarterly Rank Change: 3.7; Rank: 54576; Founders: Name: Elena Morris, Degrees: Columbia University in Financial Engineering, Jobs: Quantitative Analyst at Wall Street, Previous Companies: Name: QuantPredict, Funding: 0, Status: Inactive
 
-                    Name: ClearView AI; Description: Offers cutting-edge AI technologies for enhancing security systems through facial recognition; Categories: ["security", "artificial-intelligence", "image_recognition"]; Employees: 40; Revenue: 4000000; Location: London; Funding: 12000000; Funding Stage: Series A; Number of Investors: 3; Top Investors: Security First, AI Global; Weekly Rank Change: 6.2; Monthly Rank Change: 11.4; Quarterly Rank Change: 5.0; Rank: 56789; Founders: Name: Michael Kingston, Degrees: Imperial College London in Computer Science, Jobs: Security Analyst at SecureTech, Previous Companies: Name: FaceGuard, Funding: 200000, Status: Acquired by Security First
+                    UUID: bdub1-nunfi11b-4111-bc94-f210d2872e8; Name: ClearView AI; Description: Offers cutting-edge AI technologies for enhancing security systems through facial recognition; Categories: ["security", "artificial-intelligence", "image_recognition"]; Employees: 40; Revenue: 4000000; Location: London; Funding: 12000000; Funding Stage: Series A; Number of Investors: 3; Top Investors: Security First, AI Global; Weekly Rank Change: 6.2; Monthly Rank Change: 11.4; Quarterly Rank Change: 5.0; Rank: 56789; Founders: Name: Michael Kingston, Degrees: Imperial College London in Computer Science, Jobs: Security Analyst at SecureTech, Previous Companies: Name: FaceGuard, Funding: 200000, Status: Acquired by Security First
 
-                    Name: AutoCode AI; Description: Innovating the field of software development with AI-driven code generation and analysis; Categories: ["software", "artificial-intelligence"]; Employees: 25; Revenue: 2000000; Location: Bangalore; Funding: 5000000; Funding Stage: early_stage; Number of Investors: 2; Top Investors: CodeVentures, DevTech Fund; Weekly Rank Change: 1.9; Monthly Rank Change: 8.2; Quarterly Rank Change: 2.8; Rank: 78901; Founders: Name: Priya Anand, Degrees: Indian Institute of Technology Bombay in Computer Science, Jobs: Software Developer at TechInnovate, Previous Companies: Name: DevStream, Funding: 0, Status: Inactive
+                    UUID: bdub1-nunfi11b-112e-bc94-f210d2872e8; Name: AutoCode AI; Description: Innovating the field of software development with AI-driven code generation and analysis; Categories: ["software", "artificial-intelligence"]; Employees: 25; Revenue: 2000000; Location: Bangalore; Funding: 5000000; Funding Stage: early_stage; Number of Investors: 2; Top Investors: CodeVentures, DevTech Fund; Weekly Rank Change: 1.9; Monthly Rank Change: 8.2; Quarterly Rank Change: 2.8; Rank: 78901; Founders: Name: Priya Anand, Degrees: Indian Institute of Technology Bombay in Computer Science, Jobs: Software Developer at TechInnovate, Previous Companies: Name: DevStream, Funding: 0, Status: Inactive
 
-                    Name: EchoAI; Description: Specializes in AI-based audio recognition and processing for smart home devices; Categories: ["smart_home", "artificial-intelligence", "audio_recognition"]; Employees: 35; Revenue: 2500000; Location: Seoul; Funding: 7000000; Funding Stage: Series A; Number of Investors: 3; Top Investors: SmartLife VC, EchoInnovate; Weekly Rank Change: 5.6; Monthly Rank Change: 12.3; Quarterly Rank Change: 6.7; Rank: 90234; Founders: Name: Jun-seo Kim, Degrees: Seoul National University in Electrical Engineering, Jobs: Audio Engineer at SoundTech, Previous Companies: Name: SoundWave, Funding: 300000, Status: Acquired by SmartLife VC
+                    UUID: bdub1-nu1e11b-4111-bc94-f210d2872e8; Name: EchoAI; Description: Specializes in AI-based audio recognition and processing for smart home devices; Categories: ["smart_home", "artificial-intelligence", "audio_recognition"]; Employees: 35; Revenue: 2500000; Location: Seoul; Funding: 7000000; Funding Stage: Series A; Number of Investors: 3; Top Investors: SmartLife VC, EchoInnovate; Weekly Rank Change: 5.6; Monthly Rank Change: 12.3; Quarterly Rank Change: 6.7; Rank: 90234; Founders: Name: Jun-seo Kim, Degrees: Seoul National University in Electrical Engineering, Jobs: Audio Engineer at SoundTech, Previous Companies: Name: SoundWave, Funding: 300000, Status: Acquired by SmartLife VC
 
+                    UUID: b81yb-1bh11b-4111-bc94-f210d2872e8
                     Name: AI Nexus
                     Description: A hub for connecting AI startups with potential investors and partners, focusing on innovative AI solutions.
                     Categories: ["artificial-intelligence", "networking", "startups"]
@@ -648,6 +665,7 @@ def rank(companies, query, n=10):
                     Name: Emily Zhao, Degrees: Columbia University in Business and AI, Jobs: Venture Capitalist at SeedFund, Previous Companies: Name: StartUpConnect, Funding: 0, Status: Inactive
                     Name: Marcus Duarte, Degrees: NYU in Computer Science, Jobs: Software Engineer at AI Tech, Previous Companies: None
 
+                    UUID: 1e1hjd-i11b-4111-bc94-f210d2872e8
                     Name: SightAI
                     Description: Develops cutting-edge AI-driven image recognition systems for security and surveillance.
                     Categories: ["image_recognition", "security", "artificial-intelligence"]
@@ -666,6 +684,7 @@ def rank(companies, query, n=10):
                     Name: Alisha Kaur, Degrees: Imperial College London in AI, Jobs: Security Analyst at CyberSec, Previous Companies: Name: SecureNet, Funding: 500000, Status: Active
                     Name: Tomás Rivera, Degrees: University of Cambridge in Computer Science, Jobs: CTO at LockSafe, Previous Companies: None
 
+                    UUID: bdub1-nunfi11b-4dahb181-e2y277217
                     Name: DeepLearn
                     Description: Offers online courses and resources for learning advanced AI and machine learning techniques.
                     Categories: ["education", "machine_learning", "artificial-intelligence"]
@@ -684,6 +703,7 @@ def rank(companies, query, n=10):
                     Name: Priya Desai, Degrees: IIT Bombay in Computer Science, Jobs: Data Scientist at DataWorks, Previous Companies: Name: EduAI, Funding: 0, Status: Merged
                     Name: Jordan Michaels, Degrees: Stanford University in AI, Jobs: Instructor at CodeAcademy, Previous Companies: None
 
+                    UUID: 1811bdub1-nunfi11b-4111-bc94-f210d2872e8
                     Name: Botify
                     Description: Specializes in creating personalized chatbots for businesses, using natural language processing.
                     Categories: ["natural_language_processing", "chatbots", "business_services"]
@@ -705,15 +725,15 @@ def rank(companies, query, n=10):
                     A: I used the evaluation criteria to choose the following top 10 companies. While many companies focus on AI, not many focus on image recognition,
                     so these are the ones chosen as they relate most to the query. The output is in descending order (best at the top):
                     
-                    1) VisionAI; Index = 3 - the company develops AI algorithms for facial recognition, which relates to the query. The founder has an excellent education, and a great previous job and founded company.
-                    2) Recognize; Index = 1 - the mention of video and image recognition using artificial intelligence relates to the query. The founders attended good universities, and one has great entrepeneurial success. Their location is in the US, which is good.
-                    3) SecureAI; Index = 8 - they focus on image recognition for security solutions, their tech is similar to the query. The company rank is quite high, the founder has a good education and they have high-value investors.
+                    1) VisionAI; UUID = 733d74b4-cbcb-4f11-bc04-f22cd99e54e8 - the company develops AI algorithms for facial recognition, which relates to the query. The founder has an excellent education, and a great previous job and founded company.
+                    2) Recognize; UUID = 7283924-cdcb-4111-bc94-f22cd91r72e8 - the mention of video and image recognition using artificial intelligence relates to the query. The founders attended good universities, and one has great entrepeneurial success. Their location is in the US, which is good.
+                    3) SecureAI; UUID = 1sjd9224-c01b-4111-bc94-f220d92872e8 - they focus on image recognition for security solutions, their tech is similar to the query. The company rank is quite high, the founder has a good education and they have high-value investors.
                     ...
-                    10) ImageMind; Index = 12 - their use of AI to enhance digital images implies a focus on image recognition. Their founders have not as good education as the higher rankings.
+                    10) ImageMind; UUID = 99hdu224-c01b-4111-bc94-f210d2872e8 - their use of AI to enhance digital images implies a focus on image recognition. Their founders have not as good education as the higher rankings.
                     [3,1,8,...,12]
                     """ + "Q: The query is: " + query + "\nThe companies are:\n" + company_info + """
                     \n Let's think about this step by step, and have a good reason according to the evaluation points for each choice. 
-                    We MUST return the numerical indices of our choices made, in a clear list at the end of our response. 
+                    We MUST return the UUIDs of our choices made, in a clear list at the end of our response. 
                     We also MUST return some good reasons for each company we chose"""
             }
         ]
@@ -729,11 +749,14 @@ def rank(companies, query, n=10):
                     """You are a helpful assistant that is able to evaluate a list of companies that relate to a query. 
                     You can perform a thought to acquire an evaluation of the companies. You should think at least 5 times.
                     After thinking, you will have the evaluations of certain companies, at which stage, you should choose the 10
-                    that relate most to the query. Output the indices that relate to these 10 companies at the end."""
+                    that relate most to the query. 
+                    You should call the 5 thoughts as 5 separate functions, and this should be done in your first step of thinking.
+                    Your initial output should be the 5 functions calls.
+                    """
             },
             {
                 "role": "user",
-                "content": "Use thought() to perform thoughts. Don't output until you hav completed the thoughts. The query to relate the evaluations to is: " + query + """
+                "content": "You should call thought() 5 times to perform thoughts. Don't output until you have completed the thoughts. The query to relate the evaluations to is: " + query + """
                 ; The company information should not be evaluated here, but is provided so you can ensure that evaluations are correct. The company
                 information is as follows: """ + company_info
             }
@@ -744,23 +767,28 @@ def rank(companies, query, n=10):
                 "type": "function",
                 "function": {
                     "name": "thought",
-                    "description": "perform an evaluation of the companies. Returns the indices of the chosen companies along with an evaluation."
+                    "description": """
+                    Perform an evaluation of the companies. Return the indices of the chosen companies along with an evaluation.
+                    In each evaluation, include the name of the company. Ensure that it is clear which evaluation relates to each company.
+                    """
                 }
             }
         ]
 
+        #TODO rare bug where the LLM tries to call a function called multi_tool_use.parallel that doesn't exist - maybe fixed?
         response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages, tools=tools, tool_choice="auto",)
         response_message = response.choices[0].message
         tool_calls = response_message.tool_calls
         messages.append(response_message)  #extend conversation with assistant's reply
         if tool_calls:
             for tool_call in tool_calls:
+                single_thought = thought()
                 messages.append(
                     {
                     "tool_call_id": tool_call.id,
                     "role": "tool",
                     "name": "thought",
-                    "content": thought(),
+                    "content": single_thought,
                     }
                 )
 
@@ -769,13 +797,14 @@ def rank(companies, query, n=10):
                 "role": "user",
                 "content": 
                 """
-                Now that you have done the thoughts, you must return the list of the 10 indices of companies that relate most to the query via their evaluations.
+                Now that you have done the thoughts, you must return the list of the 10 indicess of companies that relate most to the query via their evaluations.
                 You should include an evaluation with each explaining why they seemed the most relevant to the query, and why you chose them.
                 Put the list of indices clearly at the end. Do not perform any more thoughts! Let's think about this step by step, and have a good reason for each choice."""
             }
         )
 
-        #TODO save the evaluation for output
+        #TODO I think sometimes the LLM makes up some of the evaluation points, especially about the founder backgrounds. I expect this
+        #to disappear once the founder backgrounds are included properly, but something to beware of 
         response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages, tools=tools, tool_choice = "auto")
         return response.choices[0].message.content
     
@@ -786,14 +815,14 @@ def rank(companies, query, n=10):
 # Input data contains all information
 # Much more could be returned right now
 def outputCompanies(companies, indices, evaluations):
-    #assert(len(indices) <= 10)
-    def outputCompany(company):
-        #TODO once the correct dataframe is passed to this function, ensure we use company["founder_backgrounds"] instead of names
-        return "Name: " + company["company"] + "\nWebsite: " + company["website"] + "\nDescription: " + company["description"] + "\nFounders: " + company["founder_names"] + "\nFunding: " + str(company["funding"]) + "\n"
-    
+    selected_companies = companies.iloc[indices]
+
     print("------------------------------------------------------------")
-    for rank,index in enumerate(indices):
-        print(f"{rank+1}.\n{outputCompany(companies.iloc[index])}Reason: {evaluations[rank]}\n------------------------------------------------------------")
+    count=0
+    for i, row in selected_companies.iterrows():
+        print(f"{count+1}.\nName: {row['company']}\nWebsite: {row['website']}\nLocation: {row['location']}\nDescription: {row['description']}\nFounders: {row['founder_names']}\nFunding: {row['funding']}\nReason: {evaluations[count]}\n")
+        print("------------------------------------------------------------")
+        count+=1
 
 # LLM that controls the flow of the program. Uses a crew of LLMs to decide what tools to use, 
 # complete different parts of the procedure, etc
@@ -816,10 +845,10 @@ def controller():
                     Your job is to find the top 10 companies related to this query.
                     You will do this in 6 stages:
                     1) Get all information needed to search the web, e.g. get the crunchbase categories related to the query so we can search crunchbase
-                    2) Search the web for 1000s of companies relating to the query, e.g. search crunchbase using the categories we just obtained. You cannot do this at the same time as finding the categories.
+                    2) Search the web for all of the companies relating to the query, e.g. search crunchbase using the categories we just obtained. You cannot do this at the same time as finding the categories.
                     3) Refine the set of companies down to around 100 using the information found and the query
                     4) Find all information relevant to our final 100 companies, including founder backgrounds
-                    5) Rank the top 10 companies using all of the information found and the query
+                    5) Rank the top 10 companies using all of the information found and the query. Recieve a list of 10 evaluations, and 10 indices of companies.
                     6) Output the companies with all necessary information
                     """
                 },
@@ -835,11 +864,11 @@ def controller():
                     Observation 1: I now have the categories - ["blockchain-investment", "cryptocurrency"]
 
                     Thought 2: I need to perform a search for companies related to the query. I will be searching crunchbase for this. 
-                    I have the categories to search for. I want to search for 1000 companies related to these categories.
-                    Act 2: searchCrunchbaseCompanies(categories = ["blockchain-investment", "cryptocurrency"], n=1000)
-                    Observation 2: 1000 companies found
+                    I have the categories to search for. I want to search for all of the companies related to these categories.
+                    Act 2: searchCrunchbaseCompanies(categories = ["blockchain-investment", "cryptocurrency"], n=-1)
+                    Observation 2: 1971 companies found
 
-                    Thought 3: I have 1000 companies, but I need to refine this down to 100.
+                    Thought 3: I have all of the companies, but I need to refine this down to 100.
                     Act 3: refine("blockchain investment companies", n=100)
                     Observation 3: 100 companies remaining.
 
@@ -850,15 +879,17 @@ def controller():
 
                     Thought 5: Now that I have the more in depth information, I need to rank each of the companies to find the top 10. 
                     Act 5: rank("blockchain investment companies", n=10)
-                    Observation 5: The top 10 companies are stored at indices [4,1,9,39,12,43,99,64,70,71]. The reasons for each one are as follows:
+                    Observation 5: The top 10 companies have indices [54,13,91,1,2,74,12,90,53,19]. 
+                    The reasons for each one are as follows:
                     - This company has a high rank on crunchbase, and is a blockchain investment company
                     - They perform research into blockchain technology and invest in cryptocurrency
                     ...
                     - They have founders with valuable backgrounds and invest in blockchain technology.
 
-                    Thought 6: I have the top 10 companies, I just need to output them
-                    Act 6: outputCompanies([4,1,9,39,12,43,99,64,70,71], 
-                    ["This company has a high rank on crunchbase, and is a blockchain investment company",
+                    Thought 6: I have the top 10 companies, I just need to output them. I need to input the indices array which is at
+                    the end of the previous message. I also need to input the evaluations array which is within the previous message.
+                    There should be the same number of evaluations and indices, both 10.
+                    Act 6: outputCompanies(indices = [54,13,91,1,2,74,12,90,53,19], evaluations = ["This company has a high rank on crunchbase, and is a blockchain investment company",
                     "They perform research into blockchain technology and invest in cryptocurrency", 
                     ...
                     "They have founders with valuable backgrounds and invest in blockchain technology."])
@@ -873,11 +904,11 @@ def controller():
                     Observation 1: I now have the categories - ["gaming", "game-development"]
 
                     Thought 2: I need to perform a search for companies related to the query. I will be searching crunchbase for this. 
-                    I have the categories to search for. I want to search for 1000 companies related to these categories.
-                    Act 2: searchCrunchbaseCompanies(categories = ["gaming", "game-development"], n=1000)
-                    Observation 2: 1000 companies found. 
+                    I have the categories to search for. I want to search for all of the companies related to these categories, so I will choose n=-1.
+                    Act 2: searchCrunchbaseCompanies(categories = ["gaming", "game-development"], n=-1)
+                    Observation 2: 2817 companies found. 
 
-                    Thought 3: I have 1000 companies, but I need to refine this down to 100.
+                    Thought 3: I have all of the companies, but I need to refine this down to 100.
                     Act 3: refine("indie game development, n=100")
                     Observation 3: 100 companies remaining.
 
@@ -888,14 +919,17 @@ def controller():
 
                     Thought 5: Now that I have the more in depth information, I need to rank each of the companies to find the top 10. 
                     Act 5: rank("indie game development", n=10)
-                    Observation 5: The top 10 companies are stored at indices [61, 21, 34, 5, 72, 87, 20, 29, 71, 2]. The reasons are:
+                    Observation 5: The top 10 companies have the indices [2,1,23,56,75,35,64,24,78,58]
+                    The reasons are:
                     - This company has been very successful recently, and their founders are based in LA.
                     - They have made many successful indie games
                     ...
                     - The founders live in LA, and they have high-value investors
 
-                    Thought 6: I have the top 10 companies, I just need to output them
-                    Act 6: outputCompanies([61, 21, 34, 5, 72, 87, 20, 29, 71, 2], ["This company has been very successful recently, and their founders are based in LA.",
+                    Thought 6: I have the top 10 companies, I just need to output them. I must input the list of indices which was
+                    included in the previous message. This is one variable. The other variable is the list of evaluations. This
+                    was also in the previous message. I should make sure that I have 10 evaluations and 10 indices, in separate variables.
+                    Act 6: outputCompanies(indices = [2,1,23,56,75,35,64,24,78,58], evaluations = ["This company has been very successful recently, and their founders are based in LA.",
                     "They have made many successful indie games", ... "The founders live in LA, and they have high-value investors"])
                     Observation 6: Outputting finished. Task complete.
         
@@ -923,7 +957,7 @@ def controller():
                         },
                         "n": {
                             "type": "number",
-                            "description": "number of results for search to return"
+                            "description": "number of results for search to return. input -1 to find all companies"
                         }
                     },
                     "required": [
@@ -987,7 +1021,7 @@ def controller():
             "type": "function",
             "function": {
                 "name": "rank",
-                "description": "rank the top 10 companies based on the found information",
+                "description": "rank the top 10 companies based on the found information. outputs the uuids list and the evaluations list, these are to be inputted to the output function",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -1007,15 +1041,15 @@ def controller():
             "type": "function",
             "function": {
                 "name": "outputCompanies",
-                "description": "takes a set of companies and their detailed information, along with a list of indices, and outputs the website URL, name, description, founders and their background, funding and its background for each company at an index in the dataframe",
+                "description": "takes a set of companies and their detailed information, along with a list of their indices, and outputs the website URL, name, description, founders and their background, funding and its background for each company at an index stored in indices within the dataframe",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "indices": {
                             "type": "array",
                             "items": {
-                                "type": "number",
-                                "description": "an index in the dataframe"
+                                "type": "integer",
+                                "description": "the index of one of the companies within the datafram"
                             },
                             "description": "the list of indices of the companies to be outputted"
                         },
@@ -1072,8 +1106,8 @@ def controller():
                         #TODO there is a bug where this can be called on stage 1, and it guesses categories - maybe fixed?
                         #try statement to catch this bug
                         try:
-                            #TODO change limit back to function_args["n"], this is for testing rn
-                            local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], -1)})
+                            #LLM chooses n=-1 when we want to search all of them. Right now, I expect it chooses this every time, but this can be changed
+                            local_args.update({"crunchbase_companies": searchCrunchbaseCompanies(function_args["categories"], function_args["n"])})
                             function_response = str(local_args["crunchbase_companies"].shape[0]) + " companies found."
                         except:
                             function_response = "Crunchbase Error - maybe LLM searched too early, or network is down?"
@@ -1081,7 +1115,9 @@ def controller():
             
                     case "searchCrunchbaseFounders": 
                         print("Searching for founders on Crunchbase... [CURRENTLY BROKEN]")
+
                         #TODO most crunchbase founders don't have their degree info on there, so this is currently non-functional
+                        #TODO replace this with your searching for founder function, maybe one for expensive mode and one for the cheap mode
                         local_args["refined_companies"]["founder_backgrounds"] = local_args["refined_companies"]["founder_names"]
 
                         #old code that searches crunchbase, but not enough info on there
@@ -1105,8 +1141,7 @@ def controller():
 
                     case "outputCompanies":
                         print("Outputting companies...")
-                        #TODO fix bug where the indices refer to large dataframe, not refined one 
-                        outputCompanies(local_args["crunchbase_companies"], function_args["indices"], function_args["evaluations"])
+                        outputCompanies(local_args["refined_companies"], function_args["indices"], function_args["evaluations"])
                         function_response = "Outputting finished. Task complete."
 
                 #add the necessary function response to the messages for the next conversation
@@ -1120,3 +1155,23 @@ def controller():
                 )  
 
 controller()
+                
+def testing():
+    evaluations = ["This company number 1", "this company 2", "this company 3", "this company 4","this company 5"]
+    companies = pd.read_csv("embeddings.csv", sep="\t", encoding="utf8")
+    uuids = [
+        "f7d8590a-ffd9-4b4c-b408-a1cc7cb12308", #AutoAgents
+        "20a60a7e-b3f2-44b3-bf68-26a9d02ea36a", #My AI
+        "82aee40b-3dcb-4678-adc4-73b8e1c91a7e", #Together AI
+        "d506bceb-2ac5-48d2-80c4-5db5626cf7ba", #LastMile AI
+        "3f95ba26-a009-4783-a050-d45bded05b53" # Sapient AI
+        ]
+
+    filtered_companies = companies[companies['uuid'].isin(uuids)]
+    filtered_companies = filtered_companies.set_index('uuid')
+    ordered_companies = filtered_companies.loc[uuids].reset_index()
+
+    print("------------------------------------------------------------")
+    for i, row in ordered_companies.iterrows():
+        print(f"{i+1}.\nName: {row['company']}\nWebsite: {row['website']}\nLocation: {row['location']}\nDescription: {row['description']}\nFounders: {row['founder_names']}\nFunding: {row['funding']}\nReason: {evaluations[i]}\n")
+        print("------------------------------------------------------------")
