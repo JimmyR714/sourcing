@@ -212,12 +212,9 @@ def searchCrunchbaseFounder(founderUUID):
         return "Title: " + j["title"] + "; Employer: " + j["organization_identifier"] + "; Started: " + j["started_on.value"] + "; Finished: " + j["ended_on.value"]
         
     def getCompany(c):
-        return "Name: " + c["identifier.value"] + "; Description: " + c["short_description"] + "; Valuation: " + c["valuation"] + "; Status: " + c["status"]
-        #TODO change valuation to funding ideally
+        return "Name: " + c["identifier.value"] + "; Description: " + c["short_description"] + "; Funding: " + c["funding"] + "; Status: " + c["status"]
 
     url = f"https://api.crunchbase.com/api/v4/entities/people/{founderUUID}?user_key="+CB_API_KEY
-    headers = {"accept": "application/json"}
-
     r = requests.get(url=url)
     result = json.loads(r.text) #JSON containing all information about the founder
 
