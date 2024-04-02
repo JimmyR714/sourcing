@@ -817,12 +817,15 @@ def rank(companies, query, n=10):
 def outputCompanies(companies, indices, evaluations):
     selected_companies = companies.iloc[indices]
 
-    print("------------------------------------------------------------")
+    outputLines = []
+    outputLines.append("\n------------------------------------------------------------\n")
     count=0
     for i, row in selected_companies.iterrows():
-        print(f"{count+1}.\nName: {row['company']}\nWebsite: {row['website']}\nLocation: {row['location']}\nDescription: {row['description']}\nFounders: {row['founder_names']}\nFunding: {row['funding']}\nReason: {evaluations[count]}\n")
-        print("------------------------------------------------------------")
+        outputLines.append(f"{count+1}.\nName: {row['company']}\nWebsite: {row['website']}\nLocation: {row['location']}\nDescription: {row['description']}\nFounders: {row['founder_names']}\nFunding: {row['funding']}\nReason: {evaluations[count]}\n")
+        outputLines.append("------------------------------------------------------------\n")
         count+=1
+
+    return outputLines
 
 # LLM that controls the flow of the program. Uses a crew of LLMs to decide what tools to use, 
 # complete different parts of the procedure, etc
@@ -833,9 +836,7 @@ def outputCompanies(companies, indices, evaluations):
 # 4) Pre-ranking preparation
 # 5) Ranking companies
 # 6) Outputting companies
-def controller():
-    query = input("Input a query\n") #Take the initial input query
-
+def controller(query):
     #define initial messages. These start off as a CoT ReAct Query
     messages = [
                 {"role": "system", 
@@ -1141,8 +1142,11 @@ def controller():
 
                     case "outputCompanies":
                         print("Outputting companies...")
-                        outputCompanies(local_args["refined_companies"], function_args["indices"], function_args["evaluations"])
+                        result = outputCompanies(local_args["refined_companies"], function_args["indices"], function_args["evaluations"])
                         function_response = "Outputting finished. Task complete."
+                        #if we are using the testing rig
+                        if TESTING:
+                            return result
 
                 #add the necessary function response to the messages for the next conversation
                 messages.append(
@@ -1154,24 +1158,200 @@ def controller():
                     }
                 )  
 
-controller()
+#controller()
                 
 def testing():
-    evaluations = ["This company number 1", "this company 2", "this company 3", "this company 4","this company 5"]
-    companies = pd.read_csv("embeddings.csv", sep="\t", encoding="utf8")
-    uuids = [
-        "f7d8590a-ffd9-4b4c-b408-a1cc7cb12308", #AutoAgents
-        "20a60a7e-b3f2-44b3-bf68-26a9d02ea36a", #My AI
-        "82aee40b-3dcb-4678-adc4-73b8e1c91a7e", #Together AI
-        "d506bceb-2ac5-48d2-80c4-5db5626cf7ba", #LastMile AI
-        "3f95ba26-a009-4783-a050-d45bded05b53" # Sapient AI
+    #set of queries that we want to test {topic: query}
+    tests = {"streaming": "Give me the top movie and TV streaming companies", 
+             "web_design": "Find the best website design companies that focus on interactive websites",
+             "AI_agent": "Find all AI agent framework and AI agent developer tool startups",
+             "games": "What are the top game design companies that make casual, family-friendly games?",
+             "market_research": "Find the best startups that perform market research on a more personal level",
+             "advertising": "Return the top advertising firms that take on small clients too"}
+    for test in tests:
+        q = tests[test]
+        result = controller(q)
+
+        messages = [
+            {
+                "role": "system",
+                "content": 
+                    """
+                    You are a helpful assistant. Your job is to take an input of a query that is used for finding companies that match the query,
+                    as well as the companies that have been returned by this query, and you must rank the relevance and quality of the companies chosen.
+                    You should rank each choice on a scale of 1-10, and the ranking should be based on the relevance of the company to the query.
+                    When you have created the rankings, you should call the function output with an input of the list of rankings. Ensure that the list is 
+                    in the same order as the companies that were input.
+                    """
+            },
+            {
+                "role": "user",
+                "content":
+                    """
+                    Query: Find the top 10 companies that create video games that are working on action and shooter games.
+                    Companies:
+                    ------------------------------------------------------------
+
+                    1.
+                    Name: Certain Affinity
+                    Website: http://www.certainaffinity.com/
+                    Description: The goal of creating innovative, top-quality action games.
+                    Founders: Max Hoberman
+                    Funding: 15000000
+
+                    ------------------------------------------------------------
+
+                    2.
+                    Name: Blind Squirrel Games
+                    Website: http://blindsquirrelentertainment.com
+                    Description: Blind Squirrel Games is a computer games company specializing in video game development services.
+                    Founders: Brad Hendricks
+                    Funding: 5000000
+
+                    ------------------------------------------------------------
+
+                    3.
+                    Name: ProbablyMonsters
+                    Website: http://www.probablymonsters.com
+                    Description: ProbablyMonsters builds AAA video game studios and interactive entertainment.
+                    Founders: Harold Ryan
+                    Funding: 218800000
+
+                    ------------------------------------------------------------
+
+                    4.
+                    Name: SuperTeam Games
+                    Website: https://www.superteamgames.com/
+                    Description: SuperTeam Games is is creating a new breed of sports games.
+                    Founders: Not found
+                    Funding: 10000000
+
+                    ------------------------------------------------------------
+
+                    5.
+                    Name: Redhill Games
+                    Website: https://www.redhillgames.com/
+                    Description: Redhill Games are a free to play PC game studio formed by a team of industry veterans.
+                    Founders: Milos Jerabek
+                    Funding: 30000000
+
+                    ------------------------------------------------------------
+
+                    6.
+                    Name: Phoenix Labs
+                    Website: https://phxlabs.ca
+                    Description: Phoenix Labs crafts a new AAA multiplayer experience for players to create lasting, memorable relationships for years to come.   
+                    Founders: Jesse Houston,Robin Mayne,Sean Bender
+                    Funding: 3518500
+
+                    ------------------------------------------------------------
+
+                    7.
+                    Name: Shrapnel
+                    Website: https://www.shrapnel.com/
+                    Description: Shrapnel is an AAA Extraction FPS powered by next-gen community-driven tools, built on the blockchain to offer true ownership.   
+                    Founders: Calvin Zhou,Edmund Shern,Herbert Taylor,Mark Long,Naomi Lackaff
+                    Funding: 20600000
+
+                    ------------------------------------------------------------
+
+                    8.
+                    Name: Velan Studios
+                    Website: http://www.velanstudios.com
+                    Description: Velan Studios is a new development studio made up of a diverse team of game industry veterans.
+                    Founders: Karthik Bala
+                    Funding: 7000000
+
+                    ------------------------------------------------------------
+
+                    9.
+                    Name: Singularity 6
+                    Website: https://www.singularity6.com
+                    Description: Singularity 6 is a game development studio dedicated to the idea that games can create deeper, more meaningful experiences.      
+                    Founders: Aidan Karabaich,Anthony Leung
+                    Funding: 49000000
+
+                    ------------------------------------------------------------
+
+                    10.
+                    Name: Mythical Games
+                    Website: https://mythicalgames.com
+                    Description: Mythical Games is a video game engine for player-owned economies.
+                    Founders: Cameron Thacker,Chris Downs,Jamie Jackson,Rudy Koch
+                    Funding: 297000000
+
+                    ------------------------------------------------------------
+
+                    Thinking:
+                    1) The first company, Certain Affinity, is a game development company, and they specifically say that they work on high-quality action games. This
+                    is included in the query, so is very relevant. They might make shooter games, but they don't specify, so I can't rank them on that. They have
+                    a lot of funding too, so are probably a high quality company. The ranking is 8.3.
+                    2) Blind Squirrel games is a game development company, with a small amount of funding. There isn't much else that makes this relevant
+                    to the query, so the ranking is 5.9.
+                    3) This company is another video game development company, making AAA games which are likely very big and so this is a higher quality company. 
+                    This company has a lot of funding too. The ranking is 6.6.
+                    ...
+                    10) Mythical Games is a video game engine, not a video game development company. This seems quite irrelevant compared to the prompt. However, 
+                    they have a lot of funding, so the ranking is 4.3.
+
+                    Output: Call the function output with paramater [8.3, 5.9, 6.6, ..., 4.3]
+                    """
+            }
         ]
 
-    filtered_companies = companies[companies['uuid'].isin(uuids)]
-    filtered_companies = filtered_companies.set_index('uuid')
-    ordered_companies = filtered_companies.loc[uuids].reset_index()
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                "name": "output",
+                "description": "Output the result when we have finished ranking",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "rankings": {
+                            "type": "array",
+                            "items": {
+                                "type": "number",
+                            },
+                            "description": "a list of rankings of companies, in the correct order"
+                        }
+                    },
+                    "required": [
+                        "rankings"
+                    ]
+                }
+            }
+            }
+        ]
 
-    print("------------------------------------------------------------")
-    for i, row in ordered_companies.iterrows():
-        print(f"{i+1}.\nName: {row['company']}\nWebsite: {row['website']}\nLocation: {row['location']}\nDescription: {row['description']}\nFounders: {row['founder_names']}\nFunding: {row['funding']}\nReason: {evaluations[i]}\n")
-        print("------------------------------------------------------------")
+        #allow LLM to think about messages up to this stage
+        response = client.chat.completions.create(
+            model="gpt-4-turbo-preview",
+            messages=messages,
+            tools=tools,
+            tool_choice="auto",
+        )
+        response_message = response.choices[0].message
+
+        #check for function calls at this stage
+        tool_calls = response_message.tool_calls
+        if tool_calls: #if there was a function call
+            # for each function call, we run the function
+            for tool_call in tool_calls:
+                rankings = json.loads(tool_call.function.arguments)["rankings"]
+
+        with open(f"results/{test}.txt", "w") as file:
+            file.write(q)
+            for line in result:
+                file.write(line)
+
+            file.write("Relevance Rankings: ")
+            file.write(','.join(str(x) for x in rankings))
+
+TESTING = True
+if TESTING:
+    #testing rig for determining how 
+    testing()
+else:
+    query = input("Input a query\n") #Take the initial input query
+    controller(query)

@@ -1,0 +1,73 @@
+Give me the top movie and TV streaming companies------------------------------------------------------------1.
+Name: Playcast.io
+Website: https://playcast.io/
+Location: Seattle,Washington,United States,North America
+Description: Playcast.io is an entertainment company that offers peer to peer interactive game streaming services.
+Founders: Not found
+Funding: 4672000
+Reason: Global streaming leader with a vast library.
+------------------------------------------------------------2.
+Name: Homi TV
+Website: https://homitv.com
+Location: Middletown,Delaware,United States,North America
+Description: Homi streams award-winning African movies and lifestyle shows from over forty (40) countries in Africa.
+Founders: Enock Ofosu Mensah,Fawaz Yunus,Kwame Basoah,Kwame Mensah Twum
+Funding: 660000
+Reason: Innovative streaming services with unique content curation.
+------------------------------------------------------------3.
+Name: Angel Studios
+Website: https://www.angel.com
+Location: Provo,Utah,United States,North America
+Description: Angel Studios is a video streaming service and media company that finances its productions through equity crowdfunding.
+Founders: Jordan Harmon,Neal Harmon
+Funding: 77516316
+Reason: Specializes in streaming international cinema.
+------------------------------------------------------------4.
+Name: Rangkai
+Website: https://www.rangkai.id
+Location: Jakarta,Jakarta Raya,Indonesia,Asia
+Description: "Film Online" an Indonesian TVOD Entertainment-Tech startup company.
+Founders: Bernadeth Frederika,Muhammad Abraham,Redemptus Rangga
+Funding: 0
+Reason: Exclusive TV series and movies.
+------------------------------------------------------------5.
+Name: Stream Shop
+Website: https://streamshop.com.br/
+Location: São Paulo,Sao Paulo,Brazil,South America
+Description: A new, interactive and efficient online shopping video interface for e-commerces
+Founders: Marcio Machado
+Funding: 1100000
+Reason: 4K and HDR movie streaming.
+------------------------------------------------------------6.
+Name: fanaticTV
+Website: http://www.fanaticTV.com
+Location: Denver,Colorado,United States,North America
+Description: ...a L!VE Hosted TV PARTY! (in your pocket)
+Founders: Drew Massey,Jonathan Simpson-Bint
+Funding: 500000
+Reason: Library of classic films.
+------------------------------------------------------------7.
+Name: Neon Music Network
+Website: NA
+Location: Not found
+Description: Neon Music Network is a music-video streaming service
+Founders: Kais Radwan
+Funding: 0
+Reason: Children's content streaming.
+------------------------------------------------------------8.
+Name: tiun
+Website: https://tiun.app
+Location: Zürich,Zurich,Switzerland,Europe
+Description: Payment solution for media and streaming.
+Founders: Christian Heiduschke,Sandro Zweig
+Funding: 0
+Reason: AI to improve streaming recommendations.
+------------------------------------------------------------9.
+Name: Tilt
+Website: https://watchtilt.com
+Location: New York,New York,United States,North America
+Description: Tilt is a mobile live-streaming platform that offers different shows.
+Founders: Not found
+Funding: 0
+Reason: Integrating social viewing experiences.
+------------------------------------------------------------Relevance Rankings:8.3,5.9,6.6,3,5,7.5,9,4.5,5.2,4.3

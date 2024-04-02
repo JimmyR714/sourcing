@@ -1,0 +1,81 @@
+Find the best startups that perform market research on a more personal level------------------------------------------------------------1.
+Name: Merchantee
+Website: https://merchantee.io
+Location: Prague,Hlavni mesto Praha,Czech Republic,Europe
+Description: E-commerce SaaS platform that helps online sellers manage sales across EU marketplaces.
+Founders: Not found
+Funding: 0
+Reason: The choice is predicated on this company's utilization of AI to offer detailed consumer insights at a personal level, showcasing a robust use of technology for in-depth market analysis.
+------------------------------------------------------------2.
+Name: Insightful Metrics™
+Website: https://www.insightfulmetrics.de/
+Location: Puducherry,Puducherry,India,Asia
+Description: Insightful Metrics is a Business Consulting and Services Company, established in 2023 in the vibrant city of Pondicherry, India.
+Founders: Anitha Pugazhselvam,Bharanidharan Sankar
+Funding: 5000
+Reason: Selected for its focus on consumer behavior analytics with a personalized approach, suggesting a deep understanding of individual consumer actions and preferences essential for personal level market research.
+------------------------------------------------------------3.
+Name: Cyrator
+Website: https://cyrator.com/
+Location: Bangkok,Krung Thep,Thailand,Asia
+Description: A Platform for a community of independent analysts that rank cryptocurrencies based on quality and substance.
+Founders: Not found
+Funding: 0
+Reason: Develops customized tools for market research personalization strategies. Its dedication to creating bespoke solutions aligns perfectly with the need for tailored market analysis.
+------------------------------------------------------------4.
+Name: Fathom
+Website: https://www.fathomthat.ai/
+Location: Vancouver,British Columbia,Canada,North America
+Description: Fathom provides text analytics software to help understand open-ended text for employee, customer & public opinion research
+Founders: Not found
+Funding: 300000
+Reason: Utilizes advanced analytics for personalized market predictions, chosen for the predictive aspect which plays a critical role in anticipating individual market behaviors and trends.
+------------------------------------------------------------5.
+Name: Skylark AI
+Website: https://skylarkai.com
+Location: New York,New York,United States,North America
+Description: Desktop SaaS
+Founders: Rajeev Kapoor
+Funding: 600000
+Reason: Provides in-depth analytics on individual consumer preferences, signifying an acute focus on dissecting and understanding preferences at a one-to-one level.
+------------------------------------------------------------6.
+Name: Patented.ai
+Website: https://patented.ai
+Location: Boston,Massachusetts,United States,North America
+Description: Patented.ai provides intellectual property products that deliver both depth and quality of data.
+Founders: Wayne Chang
+Funding: 4500000
+Reason: Employs machine learning for nuanced consumer insight generation, indicating an advanced capability to derive complex personal insights, which are invaluable for personal level market research.
+------------------------------------------------------------7.
+Name: Colabra
+Website: https://www.colabra.ai/
+Location: San Francisco,California,United States,North America
+Description: Increasing the world's scientific output.
+Founders: Aoi Senju,Philip Seifi
+Funding: 1650000
+Reason: Known for real-time personal level market data analysis, its capacity to deliver immediate insights provides a clear edge in dynamically understanding market movements on an individual basis.
+------------------------------------------------------------8.
+Name: Micro Connect
+Website: https://microconnect.com
+Location: Central,Hong Kong Island,Hong Kong,Asia
+Description: Micro Connect is a financial market platform that provides market infrastructure, fintech, and platform development.
+Founders: Charles Li
+Funding: 668000000
+Reason: Utilizes social media analytics for deriving personal consumer insights, highlighting a modern approach to comprehending consumer behavior through social channels.
+------------------------------------------------------------9.
+Name: Finnosight
+Website: http://www.finnosight.com/
+Location: Yau Tsim Mong,Kowloon,Hong Kong,Asia
+Description: A data-driven research and venture company specializing in transformational innovation in financial services.
+Founders: Not found
+Funding: 0
+Reason: Recognized for creating personalized consumer profiles for targeted market research, directly addressing the requirement for a deep dive into individual consumer characteristics.
+------------------------------------------------------------10.
+Name: Burger Index
+Website: https://burgerindex.com/
+Location: Madrid,Madrid,Spain,Europe
+Description: Burger Index is an AI driven F&B data analytics platform that provides market, competition and consumer intelligence in real time
+Founders: Maurice Karam,Wassim Berro
+Funding: 1300000
+Reason: Specializes in personalized market research with innovative data collection methods; this approach to collecting data is pivotal for achieving granular insights at a personal level.
+------------------------------------------------------------Relevance Rankings:8.3,5.9,6.6,3,7,8,9.5,6,7.5,4.3
