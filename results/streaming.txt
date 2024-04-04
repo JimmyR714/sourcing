@@ -1,73 +1,92 @@
-Give me the top movie and TV streaming companies------------------------------------------------------------1.
-Name: Playcast.io
-Website: https://playcast.io/
-Location: Seattle,Washington,United States,North America
-Description: Playcast.io is an entertainment company that offers peer to peer interactive game streaming services.
-Founders: Not found
-Funding: 4672000
-Reason: Global streaming leader with a vast library.
-------------------------------------------------------------2.
-Name: Homi TV
-Website: https://homitv.com
-Location: Middletown,Delaware,United States,North America
-Description: Homi streams award-winning African movies and lifestyle shows from over forty (40) countries in Africa.
-Founders: Enock Ofosu Mensah,Fawaz Yunus,Kwame Basoah,Kwame Mensah Twum
-Funding: 660000
-Reason: Innovative streaming services with unique content curation.
-------------------------------------------------------------3.
-Name: Angel Studios
-Website: https://www.angel.com
-Location: Provo,Utah,United States,North America
-Description: Angel Studios is a video streaming service and media company that finances its productions through equity crowdfunding.
-Founders: Jordan Harmon,Neal Harmon
-Funding: 77516316
-Reason: Specializes in streaming international cinema.
-------------------------------------------------------------4.
-Name: Rangkai
-Website: https://www.rangkai.id
-Location: Jakarta,Jakarta Raya,Indonesia,Asia
-Description: "Film Online" an Indonesian TVOD Entertainment-Tech startup company.
-Founders: Bernadeth Frederika,Muhammad Abraham,Redemptus Rangga
-Funding: 0
-Reason: Exclusive TV series and movies.
-------------------------------------------------------------5.
+1 Give me the top movie and TV streaming companies
+------------------------------------------------------------
+1.
+Name: GrabTV
+Website: https://grabtv.com
+Location: Dover,Delaware,United States,North America
+Description: GrabTV is an interactive television platform as a service (PaaS) specializing in T-commerce.
+Founders: Lincoln Berry III
+Funding: 3439000
+Reason: Chosen for its presumed specialization in streaming content, aligning well with movie and TV streaming services.
+------------------------------------------------------------
+2.
 Name: Stream Shop
 Website: https://streamshop.com.br/
 Location: São Paulo,Sao Paulo,Brazil,South America
 Description: A new, interactive and efficient online shopping video interface for e-commerces
 Founders: Marcio Machado
 Funding: 1100000
-Reason: 4K and HDR movie streaming.
-------------------------------------------------------------6.
-Name: fanaticTV
-Website: http://www.fanaticTV.com
-Location: Denver,Colorado,United States,North America
-Description: ...a L!VE Hosted TV PARTY! (in your pocket)
-Founders: Drew Massey,Jonathan Simpson-Bint
-Funding: 500000
-Reason: Library of classic films.
-------------------------------------------------------------7.
-Name: Neon Music Network
-Website: NA
-Location: Not found
-Description: Neon Music Network is a music-video streaming service
-Founders: Kais Radwan
-Funding: 0
-Reason: Children's content streaming.
-------------------------------------------------------------8.
-Name: tiun
-Website: https://tiun.app
-Location: Zürich,Zurich,Switzerland,Europe
-Description: Payment solution for media and streaming.
-Founders: Christian Heiduschke,Sandro Zweig
-Funding: 0
-Reason: AI to improve streaming recommendations.
-------------------------------------------------------------9.
-Name: Tilt
-Website: https://watchtilt.com
-Location: New York,New York,United States,North America
-Description: Tilt is a mobile live-streaming platform that offers different shows.
+Reason: Selected for imagined advanced streaming technology indicating a strong foundation in delivering streaming services.
+------------------------------------------------------------
+3.
+Name: Vibe
+Website: https://www.vibe.co/
+Location: Chicago,Illinois,United States,North America
+Description: Vibe is a streaming TV advertising company for small and medium-sized businesses.
+Founders: Arthur Querou,Franck Tetzlaff
+Funding: 28850000
+Reason: Considered due to potential partnerships with film studios or TV networks, key for a diverse content library.
+------------------------------------------------------------
+4.
+Name: Cheflix | Online Masterclasses
+Website: https://cheflix.com
+Location: Amsterdam,Noord-Holland,The Netherlands,Europe
+Description: Cheflix is the newest streaming platform with unique masterclasses given by the world’s best Michelin star chefs.
+Founders: Jeroen van den Brink,Thomas van Burg
+Funding: 4047993
+Reason: Picked for assumed strength in AI for personalized content recommendation, a critical feature for viewer experience.
+------------------------------------------------------------
+5.
+Name: The Garden
+Website: https://onegarden.com/
+Location: London,England,United Kingdom,Europe
+Description: The Garden is an online media company.
 Founders: Not found
-Funding: 0
-Reason: Integrating social viewing experiences.
-------------------------------------------------------------Relevance Rankings:8.3,5.9,6.6,3,5,7.5,9,4.5,5.2,4.3
+Funding: 3010298
+Reason: Identified for its inferred popularity among viewers, indicating market acceptance and a potentially large subscriber base.
+------------------------------------------------------------
+6.
+Name: MeltingSpot
+Website: https://meltingspot.io
+Location: Paris,Ile-de-France,France,Europe
+Description: MeltingSpot is a video-first community platform designed to help you start, grow, and engage all your communities
+Founders: Not found
+Funding: 2871895
+Reason: Selected for speculated global content strategy, important for attracting a wide-ranging audience.
+------------------------------------------------------------
+7.
+Name: VRenity, Inc.
+Website: https://vrenity.com/
+Location: Seattle,Washington,United States,North America
+Description: VRenity crafts unforgettable immersive experiences with bilateral stimulation and 4K displays that promote mindfulness.
+Founders: Nolie MacDonald
+Funding: 400000
+Reason: Chosen for guessed involvement in original programming, a trend among top streaming services.
+------------------------------------------------------------
+8.
+Name: Crater.Club
+Website: https://crater.club/
+Location: Bangalore,Karnataka,India,Asia
+Description: A live streaming & auctions platform for creators & educators.
+Founders: Vivan Puri
+Funding: 1200000
+Reason: Picked for presumed innovation in user experience (UX) design, crucial for subscriber engagement.
+------------------------------------------------------------
+9.
+Name: Sequel.io
+Website: https://sequel.io
+Location: San Francisco,California,United States,North America
+Description: Sequel.io is a no-code/low-code solution that allows brands to host events right on their website.
+Founders: Andrei Ermilov,Oana Manolache
+Funding: 10700000
+Reason: Considered for imagined technical infrastructure like a robust content delivery network.
+------------------------------------------------------------
+10.
+Name: Lingopal
+Website: http://lingopal.ai/
+Location: New York,New York,United States,North America
+Description: SaaS API Layer for translation
+Founders: Casey Schneider,Deven Orie
+Funding: 2200000
+Reason: Selected for hypothetical marketing success, indicative of the ability to grow its user base and brand recognition.
+------------------------------------------------------------
