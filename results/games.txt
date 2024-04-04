@@ -1,4 +1,5 @@
-What are the top game design companies that make casual, family-friendly games?------------------------------------------------------------1.
+------------------------------------------------------------
+1.
 Name: HighXP
 Website: https://highxp.in/
 Location: Bangalore,Karnataka,India,Asia
@@ -6,7 +7,8 @@ Description: HighXP focuses on social, casual games that are simple, aimed at a 
 Founders: Not found
 Funding: 2199524
 Reason: Specialization in crafting engaging, family-oriented games, notably those with educational content or broad appeal. Focus on family-friendly puzzle games and innovative casual games that appeal to all ages.
-------------------------------------------------------------2.
+------------------------------------------------------------
+2.
 Name: Deneb Games
 Website: https://denebgames.com
 Location: Istanbul,Istanbul,Turkey,Europe
@@ -14,7 +16,8 @@ Description: Deneb Games is a Mobile Gaming App that produces Hyper- casual and 
 Founders: Mostafa Keivanian
 Funding: 0
 Reason: Highlighted for its innovative family-friendly game mechanics and emphasis on casual games that are appealing across all age groups. Mention of games perfect for family game night.
-------------------------------------------------------------3.
+------------------------------------------------------------
+3.
 Name: TinyPlay, Inc.
 Website: https://tinyplay.games/
 Location: Middletown,Delaware,United States,North America
@@ -22,7 +25,8 @@ Description: TinyPlay - mobile and console game developer. We work on creative p
 Founders: Ilya Rastorguev,Michael Shilov
 Funding: 400000
 Reason: Noted for developing interactive story games suitable for children and adults alike. Emphasis on creativity and problem-solving in their games.
-------------------------------------------------------------4.
+------------------------------------------------------------
+4.
 Name: Studio Nebula
 Website: https://studionebula.io
 Location: Sharjah,Sharjah,United Arab Emirates,Asia
@@ -30,7 +34,8 @@ Description: Crafting fun mobile games for everyone
 Founders: Zain Raza
 Funding: 10000
 Reason: Acknowledged for pioneering educational yet fun games for young learners, and focus on non-violent, casual games catering to a broad family audience.
-------------------------------------------------------------5.
+------------------------------------------------------------
+5.
 Name: Clap Techno Games Pvt. Ltd.
 Website: https://cryptoplay.in
 Location: Haryana,Haryana,India,Asia
@@ -38,7 +43,8 @@ Description: Games Development co.
 Founders: DEEPAK DEEPAK,Sudeep Mangla
 Funding: 52768
 Reason: Mentioned for producing top-rated casual games with wide appeal, including award-winning family games. Highlights robust multiplayer options for family gaming.
-------------------------------------------------------------6.
+------------------------------------------------------------
+6.
 Name: Music Games Company
 Website: https://www.musicgamescompany.com
 Location: Bengaluru,Karnataka,India,Asia
@@ -46,7 +52,8 @@ Description: Music Games Company builds products at the intersection of music an
 Founders: Goutham Dindukurthi,Joel Johnson
 Funding: 120000
 Reason: Selected for offering a diverse catalog with a special focus on casual, relaxing titles perfect for family game nights. Strong narrative elements in their creative casual games.
-------------------------------------------------------------7.
+------------------------------------------------------------
+7.
 Name: Team V Games
 Website: http://teamvgames.com/
 Location: Istanbul,Istanbul,Turkey,Europe
@@ -54,7 +61,8 @@ Description: Creative fun: our game studio. Passionate development, exciting exp
 Founders: Not found
 Funding: 0
 Reason: Chosen due to their emphasis on creative play that caters to both parents and children. Casual gaming portfolio makes it a clear pick for family-friendly game design.
-------------------------------------------------------------8.
+------------------------------------------------------------
+8.
 Name: ZOLLPA
 Website: https://www.ZOLLPA.com
 Location: Rochester Hills,Michigan,United States,North America
@@ -62,7 +70,8 @@ Description: ZOLLPA builds brands and brings brands to life through gaming.
 Founders: Daniel Budzinski
 Funding: 3450000
 Reason: Known for producing vibrant, engaging casual games that resonate with a broad audience, including families. Focus on producing games that suit family settings.
-------------------------------------------------------------9.
+------------------------------------------------------------
+9.
 Name: PLAYZAP GAMES
 Website: https://www.playzap.games/
 Location: Barcelona,Catalonia,Spain,Europe
@@ -70,7 +79,8 @@ Description: Free to Play. Skill to Earn. A web3 gaming platform for casual comp
 Founders: Abhishek Buchvani
 Funding: 0
 Reason: Renowned for whimsical puzzle games that charm players of all ages, indicating suitability for family play.
-------------------------------------------------------------10.
+------------------------------------------------------------
+10.
 Name: Roll
 Website: https://roll.gg
 Location: Waterloo,Ontario,Canada,North America
@@ -78,4 +88,4 @@ Description: Roll is a social app that uses online board games to let people con
 Founders: Mike Roberts
 Funding: 0
 Reason: Focuses on accessibility and enjoyment for both parents and children through narrative-rich adventure games.
-------------------------------------------------------------Relevance Rankings:8.3,5.9,6.6,3,7,6.5,9,4.5,5,4.3
+------------------------------------------------------------
