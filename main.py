@@ -1187,10 +1187,7 @@ def controller(query):
                 
 def testing():
     #set of queries that we want to test {topic: query}
-    tests = {"streaming": "1 Give me the top movie and TV streaming companies", 
-             "web_design": "2 Find the best website design companies that focus on interactive websites",
-             "market_research": "3 Find the best startups that perform market research on a more personal level",
-             "advertising": "4 Return the top advertising firms that take on small clients too"}
+    tests = {"AI_agent": "Find all AI agent frameworks and AI agent developer tool startups"}
     for test in tests:
         q = tests[test]
         result = controller(q)
