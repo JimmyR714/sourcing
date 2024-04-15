@@ -13,7 +13,10 @@ CB_API_KEY = os.getenv("CB_API_KEY")
 
 # Constants 
 EXPENSIVE_MODE = True #this will cost more to run. uses higher quality LLMs and does more calls to them too
-MAX_FUNDING = 1000000000 #Can be asjusted manually here TODO have this be a parameter inputted by LLM to crunchbase search
+# TODO have funding be a parameter inputted by LLM to crunchbase search
+MAX_FUNDING = 1000000000 #Can be asjusted manually here 
+TESTING = False #this adds some useful debugging features and additional outputs, specifically used for checking accuracy of each stage right now
+
 client = OpenAI()
 
 # Function to get the embedding for some text. Primarily used for comparing with query
@@ -27,7 +30,7 @@ def get_embedding(text, model = "text-embedding-3-small"):
 # Returns a dataframe containing the companies found
 
 # TODO add more parameters to this function to make the search more customisable, although a warning for this is that
-# it is smart to use permalinks or uuids when searching for things like locations, mirror my method for categories if necessary
+# TODO it is smart to use permalinks or uuids when searching for things like locations, mirror my method for categories if necessary
 def searchCrunchbaseCompanies(categories, n=-1):
     # Function to count the number of Crunchbase companies that appear in a given category search
     def countCrunchbaseCompanies(query):
@@ -74,12 +77,12 @@ def searchCrunchbaseCompanies(categories, n=-1):
                 "operator_id": "eq",
                 "values": ["active"] #active companies
             },
-            {
+            {   #TODO allow founding date to be adjusted by LLM
                 "type": "predicate",
                 "field_id": "founded_on",
                 "operator_id": "gte",
                 "values": [2021] #founding date after 2021
-            } #TODO ensure that this works
+            } 
         ]
     }
 
@@ -109,7 +112,7 @@ def searchCrunchbaseCompanies(categories, n=-1):
             "rank_org",
             "location_identifiers",
             "founded_on",
-            "operating_status" #TODO founding date after 2021
+            "operating_status"
         ],
         "order": [
             {
@@ -157,6 +160,7 @@ def searchCrunchbaseCompanies(categories, n=-1):
     "c_05001_10000": "5001-10000",
     "c_10001_max": "10001+"}
 
+    #process data we have acquired
     master = pd.DataFrame()
     master["uuid"] = raw["uuid"]
     master["founded_on"] = raw["properties.founded_on.value"]
@@ -261,13 +265,12 @@ def outputFounder(founder):
 # Returns the refined dataframe
 def refine(df, query, n=100):
     #process table into information that LLM can use to create embedding
+    #TODO have the information added here be customisable by the LLM
     df["pre-embedding"] = (
         "Name: " + df["company"].str.strip() +
         "; Summary: " + df["description"].str.strip() +
         "; Industries: " + df["categories"].str.strip() +
-        "; Location: " + df["location"].str.strip() #+
-        #"; Employees: " + df["num_of_employees"].str.strip() #more info could be added, but may distract LLM
-        #include investor names, founder background (possibly at a later stage)
+        "; Location: " + df["location"].str.strip() #more info could be added, but may distract LLM
         )
     
     if EXPENSIVE_MODE:
@@ -284,12 +287,12 @@ def refine(df, query, n=100):
     #choose the n most relevant companies
     refined = df.nsmallest(n, "embedding_distance")
 
-
-    refined.to_csv(f"sourcing/refinement/embeddings{query[0]}.csv",  
-        columns = ["company", "description", "founded_on", "categories", "num_of_employees", "revenue", "website", "location", "funding", 
-            "funding_stage", "founder_names", "founder_uuids", "investors", "num_of_investors", "rank_change_week", "rank_change_month", 
-            "rank_change_quarter", "rank", "status", "embedding_distance"],
-          sep="\t", encoding="utf-8") #only used for testing, also storage of top 100 companies
+    if TESTING:
+        refined.to_csv(f"sourcing/refinement/embeddings{query[0]}.csv",  
+            columns = ["company", "description", "founded_on", "categories", "num_of_employees", "revenue", "website", "location", "funding", 
+                "funding_stage", "founder_names", "founder_uuids", "investors", "num_of_investors", "rank_change_week", "rank_change_month", 
+                "rank_change_quarter", "rank", "status", "embedding_distance"],
+            sep="\t", encoding="utf-8") #only used for testing, also storage of top 100 companies
 
     return refined.reset_index()
 
@@ -363,7 +366,6 @@ def searchHackernews(query, n=100):
 # This input data includes founder information
 # Outputs the top n companies as a list of indices
 def rank(companies, query, n=10):
-    #ToT works well here
     #TODO ToT implementation can be much cleaner and more advanced here, this is only very basic to ensure evaluation is decent
     company_info = companies.apply((lambda r: f"""
         UUID: {r["uuid"]}; Name: {r["company"]}; Description: {r["description"]}; Categories: {r["categories"]}; Employees: {r["num_of_employees"]}; Revenue: {r["revenue"]};
@@ -753,6 +755,7 @@ def rank(companies, query, n=10):
         response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages)
         return response.choices[0].message.content
     
+    #Perform ToT when in expensive mode
     if EXPENSIVE_MODE:
 
         messages = [
@@ -821,20 +824,22 @@ def rank(companies, query, n=10):
         )
 
         #TODO right now, sometimes the LLM decides there isn't enough information to perform an evaluation
-        #This won't be an issue when more information is found on each company
+        #TODO This won't be an issue when more information is found on each company
+
         #TODO I think sometimes the LLM makes up some of the evaluation points, especially about the founder backgrounds. I expect this
-        #to disappear once the founder backgrounds are included properly, but something to beware of 
+        #TODO to disappear once the founder backgrounds are included properly, but something to beware of 
         response = client.chat.completions.create(model="gpt-4-turbo-preview", messages=messages, tools=tools, tool_choice = "auto")
 
         eval = response.choices[0].message.content
 
+        #output evaluations if testing
         if TESTING:
             with open(f"sourcing/evaluations/eval{query[0]}.txt", "w") as file:
                 file.write(eval)
 
         return eval
     
-    else: #not expensive mode
+    else: #not expensive mode, just do a single thought
         return thought()
 
 # Function that takes a list of companies, each with their relevant company information and outputs the necessary information about each one
@@ -842,6 +847,7 @@ def rank(companies, query, n=10):
 # Much more could be returned right now
 def outputCompanies(companies, indices, evaluations):
     #TODO sometimes the the wrong companies are output here, maybe because of the indices?
+    #TODO I advise someone with more knowledge of pandas try to fix this, currently sometimes the evaluations don't match the companies
     selected_companies = companies.iloc(indices)    
 
     outputLines = []
@@ -1117,7 +1123,7 @@ def controller(query):
         #check for function calls at this stage
         tool_calls = response_message.tool_calls
         if tool_calls: #if there was a function call
-            #TODO error handling for invalid JSONs - in all my testing, no invalid JSONs have appeared
+            #TODO error handling for invalid JSONs - in all my testing, no invalid JSONs have appeared but may be wise to implement anyway
             messages.append(response_message)  #extend conversation with assistant's reply
 
             # for each function call, we run the function
@@ -1192,178 +1198,177 @@ def testing():
         q = tests[test]
         result = controller(q)
 
-        if False:
-            messages = [
-                {
-                    "role": "system",
-                    "content": 
-                        """
-                        You are a helpful assistant. Your job is to take an input of a query that is used for finding companies that match the query,
-                        as well as the companies that have been returned by this query, and you must rank the relevance and quality of the companies chosen.
-                        You should rank each choice on a scale of 1-10, and the ranking should be based on the relevance of the company to the query.
-                        When you have created the rankings, you should call the function output with an input of the list of rankings. Ensure that the list is 
-                        in the same order as the companies that were input.
-                        """
-                },
-                {
-                    "role": "user",
-                    "content":
-                        """
-                        Query: Find the top 10 companies that create video games that are working on action and shooter games.
-                        Companies:
-                        ------------------------------------------------------------
+        messages = [
+            {
+                "role": "system",
+                "content": 
+                    """
+                    You are a helpful assistant. Your job is to take an input of a query that is used for finding companies that match the query,
+                    as well as the companies that have been returned by this query, and you must rank the relevance and quality of the companies chosen.
+                    You should rank each choice on a scale of 1-10, and the ranking should be based on the relevance of the company to the query.
+                    When you have created the rankings, you should call the function output with an input of the list of rankings. Ensure that the list is 
+                    in the same order as the companies that were input.
+                    """
+            },
+            {
+                "role": "user",
+                "content":
+                    """
+                    Query: Find the top 10 companies that create video games that are working on action and shooter games.
+                    Companies:
+                    ------------------------------------------------------------
 
-                        1.
-                        Name: Certain Affinity
-                        Website: http://www.certainaffinity.com/
-                        Description: The goal of creating innovative, top-quality action games.
-                        Founders: Max Hoberman
-                        Funding: 15000000
+                    1.
+                    Name: Certain Affinity
+                    Website: http://www.certainaffinity.com/
+                    Description: The goal of creating innovative, top-quality action games.
+                    Founders: Max Hoberman
+                    Funding: 15000000
 
-                        ------------------------------------------------------------
+                    ------------------------------------------------------------
 
-                        2.
-                        Name: Blind Squirrel Games
-                        Website: http://blindsquirrelentertainment.com
-                        Description: Blind Squirrel Games is a computer games company specializing in video game development services.
-                        Founders: Brad Hendricks
-                        Funding: 5000000
+                    2.
+                    Name: Blind Squirrel Games
+                    Website: http://blindsquirrelentertainment.com
+                    Description: Blind Squirrel Games is a computer games company specializing in video game development services.
+                    Founders: Brad Hendricks
+                    Funding: 5000000
 
-                        ------------------------------------------------------------
+                    ------------------------------------------------------------
 
-                        3.
-                        Name: ProbablyMonsters
-                        Website: http://www.probablymonsters.com
-                        Description: ProbablyMonsters builds AAA video game studios and interactive entertainment.
-                        Founders: Harold Ryan
-                        Funding: 218800000
+                    3.
+                    Name: ProbablyMonsters
+                    Website: http://www.probablymonsters.com
+                    Description: ProbablyMonsters builds AAA video game studios and interactive entertainment.
+                    Founders: Harold Ryan
+                    Funding: 218800000
 
-                        ------------------------------------------------------------
+                    ------------------------------------------------------------
 
-                        4.
-                        Name: SuperTeam Games
-                        Website: https://www.superteamgames.com/
-                        Description: SuperTeam Games is is creating a new breed of sports games.
-                        Founders: Not found
-                        Funding: 10000000
+                    4.
+                    Name: SuperTeam Games
+                    Website: https://www.superteamgames.com/
+                    Description: SuperTeam Games is is creating a new breed of sports games.
+                    Founders: Not found
+                    Funding: 10000000
 
-                        ------------------------------------------------------------
+                    ------------------------------------------------------------
 
-                        5.
-                        Name: Redhill Games
-                        Website: https://www.redhillgames.com/
-                        Description: Redhill Games are a free to play PC game studio formed by a team of industry veterans.
-                        Founders: Milos Jerabek
-                        Funding: 30000000
+                    5.
+                    Name: Redhill Games
+                    Website: https://www.redhillgames.com/
+                    Description: Redhill Games are a free to play PC game studio formed by a team of industry veterans.
+                    Founders: Milos Jerabek
+                    Funding: 30000000
 
-                        ------------------------------------------------------------
+                    ------------------------------------------------------------
 
-                        6.
-                        Name: Phoenix Labs
-                        Website: https://phxlabs.ca
-                        Description: Phoenix Labs crafts a new AAA multiplayer experience for players to create lasting, memorable relationships for years to come.   
-                        Founders: Jesse Houston,Robin Mayne,Sean Bender
-                        Funding: 3518500
+                    6.
+                    Name: Phoenix Labs
+                    Website: https://phxlabs.ca
+                    Description: Phoenix Labs crafts a new AAA multiplayer experience for players to create lasting, memorable relationships for years to come.   
+                    Founders: Jesse Houston,Robin Mayne,Sean Bender
+                    Funding: 3518500
 
-                        ------------------------------------------------------------
+                    ------------------------------------------------------------
 
-                        7.
-                        Name: Shrapnel
-                        Website: https://www.shrapnel.com/
-                        Description: Shrapnel is an AAA Extraction FPS powered by next-gen community-driven tools, built on the blockchain to offer true ownership.   
-                        Founders: Calvin Zhou,Edmund Shern,Herbert Taylor,Mark Long,Naomi Lackaff
-                        Funding: 20600000
+                    7.
+                    Name: Shrapnel
+                    Website: https://www.shrapnel.com/
+                    Description: Shrapnel is an AAA Extraction FPS powered by next-gen community-driven tools, built on the blockchain to offer true ownership.   
+                    Founders: Calvin Zhou,Edmund Shern,Herbert Taylor,Mark Long,Naomi Lackaff
+                    Funding: 20600000
 
-                        ------------------------------------------------------------
+                    ------------------------------------------------------------
 
-                        8.
-                        Name: Velan Studios
-                        Website: http://www.velanstudios.com
-                        Description: Velan Studios is a new development studio made up of a diverse team of game industry veterans.
-                        Founders: Karthik Bala
-                        Funding: 7000000
+                    8.
+                    Name: Velan Studios
+                    Website: http://www.velanstudios.com
+                    Description: Velan Studios is a new development studio made up of a diverse team of game industry veterans.
+                    Founders: Karthik Bala
+                    Funding: 7000000
 
-                        ------------------------------------------------------------
+                    ------------------------------------------------------------
 
-                        9.
-                        Name: Singularity 6
-                        Website: https://www.singularity6.com
-                        Description: Singularity 6 is a game development studio dedicated to the idea that games can create deeper, more meaningful experiences.      
-                        Founders: Aidan Karabaich,Anthony Leung
-                        Funding: 49000000
+                    9.
+                    Name: Singularity 6
+                    Website: https://www.singularity6.com
+                    Description: Singularity 6 is a game development studio dedicated to the idea that games can create deeper, more meaningful experiences.      
+                    Founders: Aidan Karabaich,Anthony Leung
+                    Funding: 49000000
 
-                        ------------------------------------------------------------
+                    ------------------------------------------------------------
 
-                        10.
-                        Name: Mythical Games
-                        Website: https://mythicalgames.com
-                        Description: Mythical Games is a video game engine for player-owned economies.
-                        Founders: Cameron Thacker,Chris Downs,Jamie Jackson,Rudy Koch
-                        Funding: 297000000
+                    10.
+                    Name: Mythical Games
+                    Website: https://mythicalgames.com
+                    Description: Mythical Games is a video game engine for player-owned economies.
+                    Founders: Cameron Thacker,Chris Downs,Jamie Jackson,Rudy Koch
+                    Funding: 297000000
 
-                        ------------------------------------------------------------
+                    ------------------------------------------------------------
 
-                        Thinking:
-                        1) The first company, Certain Affinity, is a game development company, and they specifically say that they work on high-quality action games. This
-                        is included in the query, so is very relevant. They might make shooter games, but they don't specify, so I can't rank them on that. They have
-                        a lot of funding too, so are probably a high quality company. The ranking is 8.3.
-                        2) Blind Squirrel games is a game development company, with a small amount of funding. There isn't much else that makes this relevant
-                        to the query, so the ranking is 5.9.
-                        3) This company is another video game development company, making AAA games which are likely very big and so this is a higher quality company. 
-                        This company has a lot of funding too. The ranking is 6.6.
-                        ...
-                        10) Mythical Games is a video game engine, not a video game development company. This seems quite irrelevant compared to the prompt. However, 
-                        they have a lot of funding, so the ranking is 4.3.
+                    Thinking:
+                    1) The first company, Certain Affinity, is a game development company, and they specifically say that they work on high-quality action games. This
+                    is included in the query, so is very relevant. They might make shooter games, but they don't specify, so I can't rank them on that. They have
+                    a lot of funding too, so are probably a high quality company. The ranking is 8.3.
+                    2) Blind Squirrel games is a game development company, with a small amount of funding. There isn't much else that makes this relevant
+                    to the query, so the ranking is 5.9.
+                    3) This company is another video game development company, making AAA games which are likely very big and so this is a higher quality company. 
+                    This company has a lot of funding too. The ranking is 6.6.
+                    ...
+                    10) Mythical Games is a video game engine, not a video game development company. This seems quite irrelevant compared to the prompt. However, 
+                    they have a lot of funding, so the ranking is 4.3.
 
-                        Output: Call the function output with parameter [8.3, 5.9, 6.6, ..., 4.3]
-                        """
-                },
-                {
-                    "role": "user",
-                    "content": q + "\n" + ';'.join(result)
+                    Output: Call the function output with parameter [8.3, 5.9, 6.6, ..., 4.3]
+                    """
+            },
+            {
+                "role": "user",
+                "content": q + "\n" + ';'.join(result)
+            }
+        ]
+
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                "name": "output",
+                "description": "Output the result when we have finished ranking",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "rankings": {
+                            "type": "array",
+                            "items": {
+                                "type": "number",
+                            },
+                            "description": "a list of rankings of companies, in the correct order"
+                        }
+                    },
+                    "required": [
+                        "rankings"
+                    ]
                 }
-            ]
+            }
+            }
+        ]
 
-            tools = [
-                {
-                    "type": "function",
-                    "function": {
-                    "name": "output",
-                    "description": "Output the result when we have finished ranking",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "rankings": {
-                                "type": "array",
-                                "items": {
-                                    "type": "number",
-                                },
-                                "description": "a list of rankings of companies, in the correct order"
-                            }
-                        },
-                        "required": [
-                            "rankings"
-                        ]
-                    }
-                }
-                }
-            ]
+        #allow LLM to think about messages up to this stage
+        response = client.chat.completions.create(
+            model="gpt-4-turbo-preview",
+            messages=messages,
+            tools=tools,
+            tool_choice="auto",
+        )
+        response_message = response.choices[0].message
 
-            #allow LLM to think about messages up to this stage
-            response = client.chat.completions.create(
-                model="gpt-4-turbo-preview",
-                messages=messages,
-                tools=tools,
-                tool_choice="auto",
-            )
-            response_message = response.choices[0].message
-
-            #check for function calls at this stage
-            tool_calls = response_message.tool_calls
-            if tool_calls: #if there was a function call
-                # for each function call, we run the function
-                for tool_call in tool_calls:
-                    rankings = json.loads(tool_call.function.arguments)["rankings"]
+        #check for function calls at this stage
+        tool_calls = response_message.tool_calls
+        if tool_calls: #if there was a function call
+            # for each function call, we run the function
+            for tool_call in tool_calls:
+                rankings = json.loads(tool_call.function.arguments)["rankings"]
 
         with open(f"sourcing/results/{test}.txt", "w") as file:
             file.write(q)
@@ -1373,7 +1378,6 @@ def testing():
             #file.write("Relevance Rankings: ")
             #file.write(','.join(str(x) for x in rankings))
 
-TESTING = True
 if TESTING:
     #testing rig for determining how accurate ranking results are
     testing()
