@@ -14,7 +14,7 @@ CB_API_KEY = os.getenv("CB_API_KEY")
 # Constants 
 EXPENSIVE_MODE = True #this will cost more to run. uses higher quality LLMs and does more calls to them too
 # TODO have funding be a parameter inputted by LLM to crunchbase search
-MAX_FUNDING = 1000000000 #Can be asjusted manually here 
+MAX_FUNDING = 1000000000 #Can be adjusted manually here 
 TESTING = False #this adds some useful debugging features and additional outputs, specifically used for checking accuracy of each stage right now
 
 client = OpenAI()
